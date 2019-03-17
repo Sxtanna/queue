@@ -47,7 +47,7 @@ public class QueuePlugin extends Plugin implements Listener {
         }
 
         getProxy().getServers().values().forEach(this::setupServer);
-        getProxy().registerChannel("Queue");
+        getProxy().registerChannel("queue:join");
         getProxy().getPluginManager().registerListener(this, this);
         getProxy().getScheduler().schedule(this, () -> {
             getQueues().stream().filter(Queue::canSend).forEach(Queue::sendNext);
@@ -178,8 +178,10 @@ public class QueuePlugin extends Plugin implements Listener {
      * been loaded.
      * @throws IllegalArgumentException if a server with the name does not exist
      */
-    public int getMaxPlayers(ServerInfo server) {
-        if (!maxPlayers.containsKey(server)) {
+    public int getMaxPlayers(ServerInfo server)
+    {
+        if (!maxPlayers.containsKey(server))
+        {
             setupServer(server);
             return -1;
         }
@@ -188,83 +190,97 @@ public class QueuePlugin extends Plugin implements Listener {
     }
 
     @EventHandler
-    public void onPluginMessage(PluginMessageEvent event) {
+    public void onPluginMessage(PluginMessageEvent event)
+    {
         ByteArrayDataInput in = ByteStreams.newDataInput(event.getData());
         String channel = event.getTag();
 
-        if (channel.equals("Queue")) {
-            String sub = in.readUTF();
+        if (channel.equals("queue:join"))
+        {
             UUID uuid = UUID.fromString(in.readUTF());
             ProxiedPlayer player = getProxy().getPlayer(uuid);
 
-            if (player == null) {
+            if (player == null)
+            {
                 return;
             }
 
-            if (sub.equals("Join")) {
-                QueuedPlayer queued = getQueued(player);
-                String target = in.readUTF();
-                int weight = queued.getPriority();
-                Queue queue = getQueue(target);
+            QueuedPlayer queued = getQueued(player);
+            String target = in.readUTF();
+            int weight = queued.getPriority();
+            Queue queue = getQueue(target);
 
-                if (queue == null) {
-                    ServerInfo server = getProxy().getServerInfo(target); // Find server
-                    if (server == null) {
-                        player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Invalid server provided"));
-                        return;
-                    } else {
-                        queue = new Queue(this, server);
-                        queues.put(server.getName(), queue);
-                    }
-                }
-
-                if (queued.getPriority() >= 999) {
-                    ServerInfo info = getProxy().getServerInfo(target);
-                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "Sending you to " + info.getName() + "..."));
-                    player.connect(info, (result, error) -> {
-                        if (result) {
-                            player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have been sent to " + info.getName()));
-                        }
-                    });
+            if (queue == null)
+            {
+                ServerInfo server = getProxy().getServerInfo(target); // Find server
+                if (server == null)
+                {
+                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Invalid server provided"));
                     return;
                 }
+                else
+                {
+                    queue = new Queue(this, server);
+                    queues.put(server.getName(), queue);
+                }
+            }
 
-                if (queued.getQueue() != null) {
-                    if (queued.getQueue().getTarget().getName().equalsIgnoreCase(target)) {
-                        player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are already queued for this server"));
-                    } else {
-                        player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Use /leavequeue to leave your current queue."));
+            if (queued.getPriority() >= 999)
+            {
+                ServerInfo info = getProxy().getServerInfo(target);
+                player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "Sending you to " + info.getName() + "..."));
+                player.connect(info, (result, error) -> {
+                    if (result)
+                    {
+                        player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have been sent to " + info.getName()));
                     }
-                    return;
-                }
+                });
+                return;
+            }
 
-                int index = queue.getIndexFor(weight);
-                queue.add(index, queued);
-                queued.setQueue(queue);
-                player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for " + queue.getTarget().getName()));
-                player.sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position "
-                        + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", queued.getPosition() + 1, queue.size())));
-                if (queue.isPaused()) {
-                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
+            if (queued.getQueue() != null)
+            {
+                if (queued.getQueue().getTarget().getName().equalsIgnoreCase(target))
+                {
+                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are already queued for this server"));
                 }
+                else
+                {
+                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Use /leavequeue to leave your current queue."));
+                }
+                return;
+            }
+
+            int index = queue.getIndexFor(weight);
+            queue.add(index, queued);
+            queued.setQueue(queue);
+            player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for " + queue.getTarget().getName()));
+            player.sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", queued.getPosition() + 1, queue.size())));
+            if (queue.isPaused())
+            {
+                player.sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
             }
         }
     }
 
     @EventHandler
-    public void onDisconnect(PlayerDisconnectEvent event) {
+    public void onDisconnect(PlayerDisconnectEvent event)
+    {
         handleLeave(event.getPlayer());
         queuedPlayers.remove(event.getPlayer());
     }
 
     @EventHandler
-    public void onSwitchServer(ServerSwitchEvent event) {
+    public void onSwitchServer(ServerSwitchEvent event)
+    {
         handleLeave(event.getPlayer());
     }
 
-    private void handleLeave(ProxiedPlayer player) {
+    private void handleLeave(ProxiedPlayer player)
+    {
         QueuedPlayer queued = queuedPlayers.get(player);
-        if (queued != null && queued.getQueue() != null) {
+        if (queued != null && queued.getQueue() != null)
+        {
             Queue queue = queued.getQueue();
             queue.remove(queued);
             queued.setQueue(null);
