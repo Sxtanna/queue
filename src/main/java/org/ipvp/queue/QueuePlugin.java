@@ -190,6 +190,30 @@ public class QueuePlugin extends Plugin implements Listener
         return 0;
     }
 
+    public void debugLog(String message)
+    {
+        if(debug)
+        {
+            getLogger().info(message);
+        }
+    }
+
+    public void debugWarn(String message)
+    {
+        if(debug)
+        {
+            getLogger().warning(message);
+        }
+    }
+
+    public void debugError(String message)
+    {
+        if(debug)
+        {
+            getLogger().severe(message);
+        }
+    }
+
     /**
      * Gets the maximum players allowed on a server in this bungee instance
      *
@@ -274,16 +298,8 @@ public class QueuePlugin extends Plugin implements Listener
 
             try
             {
-                if (queue.getSavedIndex(player) > -1)
-                {
-                    int index = queue.getSavedIndex(player);
-                    queue.add(index, queued);
-                }
-                else
-                {
-                    int index = queue.getIndexFor(weight);
-                    queue.add(index, queued);
-                }
+                int index = queue.getInsertionIndex(queued);
+                queue.add(index, queued);
                 queued.setQueue(queue);
             }
             catch(NullPointerException e)

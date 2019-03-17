@@ -110,12 +110,31 @@ public class Queue extends ArrayList<QueuedPlayer>
         return savedPositions.remove(playerName.toLowerCase()) != null;
     }
 
+
+    public int getInsertionIndex(QueuedPlayer player)
+    {
+        int savedIndex = getSavedIndex(player.getHandle());
+        int priorityIndex = getIndexByPriority(player.getPriority());
+
+        if (savedIndex < priorityIndex)
+        {
+            plugin.debugLog("Inserted player " + player.getHandle().getName() + " into the " + target.getName() + " queue in saved position " + savedIndex + ".");
+            plugin.debugLog("Priority position was " + priorityIndex + " and queue size was " + size() + ". Priority weight was " + player.getPriority() + ". Player position was remembered: " + savedPositions.containsKey(player.getHandle().getName().toLowerCase()) + ".");
+            return savedIndex;
+        }
+        else
+        {
+            plugin.debugLog("Inserted player " + player.getHandle().getName() + " into the " + target.getName() + " queue in priority position " + priorityIndex + ".");
+            plugin.debugLog("Saved position was " + savedIndex + " and queue size was " + size() + ". Priority weight was " + player.getPriority() + ". Player position was remembered: " + savedPositions.containsKey(player.getHandle().getName().toLowerCase()) + ".");
+            return priorityIndex;
+        }
+    }
     /**
      * Checks if a player has recently been in the queue and returns their old position or the end of the queue if so
      * @param player The player to look up
      * @return -1 if the player is not listed, the position for them to be inserted into otherwise
      */
-    public int getSavedIndex(ProxiedPlayer player)
+    private int getSavedIndex(ProxiedPlayer player)
     {
         if(savedPositions.containsKey(player.getName().toLowerCase()))
         {
@@ -123,12 +142,8 @@ public class Queue extends ArrayList<QueuedPlayer>
             {
                 return savedPositions.get(player.getName().toLowerCase());
             }
-            else
-            {
-                return this.size();
-            }
         }
-        return -1;
+        return size();
     }
 
     /**
@@ -138,14 +153,14 @@ public class Queue extends ArrayList<QueuedPlayer>
      * @param weight Priority weight to search for
      * @return Index to insert the priority at, returned index i will be {@code 0 <= i < {@link #size()}}
      */
-    public int getIndexFor(int weight)
+    private int getIndexByPriority(int weight)
     {
         if (isEmpty() || weight == -1)
         {
             return 0;
         }
 
-        // Changed to not place priority players in the first 3 slots
+        // Changed to not place priority players in the first 5 slots
         for (int i = 5; i < size(); i++)
         {
             if (weight > get(i).getPriority())
