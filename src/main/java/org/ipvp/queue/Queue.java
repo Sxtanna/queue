@@ -84,7 +84,7 @@ public class Queue extends ArrayList<QueuedPlayer>
 
     public void savePlayerPosition(String playerName, int index)
     {
-        savedPositions.put(playerName, index);
+        savedPositions.put(playerName.toLowerCase(), index);
         plugin.getProxy().getScheduler().schedule(plugin, new Runnable()
         {
             @Override
@@ -92,7 +92,7 @@ public class Queue extends ArrayList<QueuedPlayer>
             {
                 try
                 {
-                    savedPositions.remove(playerName);
+                    savedPositions.remove(playerName.toLowerCase());
                 }
                 catch (Exception e)
                 {
@@ -105,6 +105,11 @@ public class Queue extends ArrayList<QueuedPlayer>
         }, 15L,  TimeUnit.MINUTES);
     }
 
+    public boolean forgetPlayer(String playerName)
+    {
+        return savedPositions.remove(playerName.toLowerCase()) != null;
+    }
+
     /**
      * Checks if a player has recently been in the queue and returns their old position or the end of the queue if so
      * @param player The player to look up
@@ -112,11 +117,11 @@ public class Queue extends ArrayList<QueuedPlayer>
      */
     public int getSavedIndex(ProxiedPlayer player)
     {
-        if(savedPositions.containsKey(player.getName()))
+        if(savedPositions.containsKey(player.getName().toLowerCase()))
         {
-            if (savedPositions.get(player.getName()) < this.size())
+            if (savedPositions.get(player.getName().toLowerCase()) < this.size())
             {
-                return savedPositions.get(player.getName());
+                return savedPositions.get(player.getName().toLowerCase());
             }
             else
             {

@@ -34,6 +34,37 @@ public class QueueCommand extends QueuePluginCommand
                 }
                 return;
             }
+            else if (args[0].equals("forget"))
+            {
+                if(sender.hasPermission("queue.forget"))
+                {
+                    if(args.length > 1)
+                    {
+                        boolean found = false;
+                        for (Queue queue : getPlugin().getQueues())
+                        {
+                            if (queue.forgetPlayer(args[1]))
+                            {
+                                sender.sendMessage(TextComponent.fromLegacyText(ChatColor.YELLOW + "Player position forgotten in the " + queue.getTarget().getName() + " queue."));
+                                found = true;
+                            }
+                        }
+                        if(!found)
+                        {
+                            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Player was not saved in any queue, make sure they have left the queue before running this command."));
+                        }
+                    }
+                    else
+                    {
+                        sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Invalid arguments."));
+                    }
+                }
+                else
+                {
+                    sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You don't have permission to use /queue forget."));
+                }
+                return;
+            }
         }
 
 
