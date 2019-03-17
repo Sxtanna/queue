@@ -3,22 +3,27 @@ package org.ipvp.queue;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
-public class Queue extends LinkedList<QueuedPlayer> {
-
+public class Queue extends ArrayList<QueuedPlayer>
+{
     /**
      * The time between ticking the queue to send a new player
      */
-    public static final long TIME_BETWEEN_SENDING_MILLIS = 250L;
+    public static final long TIME_BETWEEN_SENDING_MILLIS = 500L;
 
     private final QueuePlugin plugin;
     private final ServerInfo target;
     private boolean paused;
     private long lastSentTime;
+    private HashMap<String, Integer> savedPositions = new HashMap<>();
 
-    public Queue(QueuePlugin plugin, ServerInfo target) {
+    public Queue(QueuePlugin plugin, ServerInfo target)
+    {
         Objects.requireNonNull(plugin);
         Objects.requireNonNull(target);
         this.plugin = plugin;
@@ -60,10 +65,65 @@ public class Queue extends LinkedList<QueuedPlayer> {
      *
      * @return True if the queue can send the next player, false otherwise
      */
-    public boolean canSend() {
-        return !isPaused() && !isEmpty()
-                && target.getPlayers().size() < plugin.getMaxPlayers(target)
-                && lastSentTime + TIME_BETWEEN_SENDING_MILLIS < System.currentTimeMillis();
+    public boolean canSend()
+    {
+        return !isPaused() &&
+                !isEmpty() &&
+                target.getPlayers().size() < plugin.getMaxPlayers(target) &&
+                lastSentTime + TIME_BETWEEN_SENDING_MILLIS < System.currentTimeMillis();
+    }
+
+    /**
+     * Saves players position in the queue when they leave so they can get it back if they rejoin
+     * @param playerName The player to save
+     */
+    public void savePlayerPosition(String playerName)
+    {
+        savePlayerPosition(playerName, 0);
+    }
+
+    public void savePlayerPosition(String playerName, int index)
+    {
+        savedPositions.put(playerName, index);
+        plugin.getProxy().getScheduler().schedule(plugin, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    savedPositions.remove(playerName);
+                }
+                catch (Exception e)
+                {
+                    if(plugin.debug)
+                    {
+                        plugin.getLogger().log(Level.WARNING, "Failed to delete player from savedPositions, this is probably fine. " + e.getMessage());
+                    }
+                }
+            }
+        }, 15L,  TimeUnit.MINUTES);
+    }
+
+    /**
+     * Checks if a player has recently been in the queue and returns their old position or the end of the queue if so
+     * @param player The player to look up
+     * @return -1 if the player is not listed, the position for them to be inserted into otherwise
+     */
+    public int getSavedIndex(ProxiedPlayer player)
+    {
+        if(savedPositions.containsKey(player.getName()))
+        {
+            if (savedPositions.get(player.getName()) < this.size())
+            {
+                return savedPositions.get(player.getName());
+            }
+            else
+            {
+                return this.size();
+            }
+        }
+        return -1;
     }
 
     /**
@@ -73,12 +133,18 @@ public class Queue extends LinkedList<QueuedPlayer> {
      * @param weight Priority weight to search for
      * @return Index to insert the priority at, returned index i will be {@code 0 <= i < {@link #size()}}
      */
-    public int getIndexFor(int weight) {
-        if (isEmpty() || weight == -1) {
+    public int getIndexFor(int weight)
+    {
+        if (isEmpty() || weight == -1)
+        {
             return 0;
         }
-        for (int i = 0; i < size(); i++) {
-            if (weight > get(i).getPriority()) {
+
+        // Changed to not place priority players in the first 3 slots
+        for (int i = 5; i < size(); i++)
+        {
+            if (weight > get(i).getPriority())
+            {
                 return i;
             }
         }
@@ -88,25 +154,30 @@ public class Queue extends LinkedList<QueuedPlayer> {
     /**
      * Sends the next player at index {@code 0} to the target server.
      */
-    public void sendNext() {
-        if (!canSend()) {
+    public void sendNext()
+    {
+        if (!canSend())
+        {
             throw new IllegalStateException("Cannot send next player in queue");
         }
 
         QueuedPlayer next = remove(0);
         next.setQueue(null);
-        next.getHandle().sendMessage(TextComponent.fromLegacyText(
-                ChatColor.GREEN + "Sending you to " + target.getName() + "..."));
-        
-        next.getHandle().connect(target, (result, error) -> {
+        savePlayerPosition(next.getHandle().getName());
+        next.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "Sending you to EarthMC..."));
+
+        plugin.getLogger().log(Level.INFO, next.getHandle().getName() + " was sent to " + target.getName() + " via Queue.");
+        next.getHandle().connect(target, (result, error) ->
+        {
             // What do we do if they can't connect?
-            if (result) {
-                next.getHandle().sendMessage(TextComponent.fromLegacyText(
-                        ChatColor.GREEN + "You have been sent to " + target.getName()));
+            if (result)
+            {
+                next.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have been sent to EarthMC"));
                 lastSentTime = System.currentTimeMillis();
-            } else {
-                next.getHandle().sendMessage(TextComponent.fromLegacyText(
-                        ChatColor.RED + "Unable to connect to " + target.getName() + ". You were removed from the queue."));
+            }
+            else
+            {
+                next.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Unable to connect to EarthMC."));
             }
         });
     }

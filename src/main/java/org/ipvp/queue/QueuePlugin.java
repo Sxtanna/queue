@@ -29,19 +29,25 @@ import java.util.logging.Level;
 import static net.md_5.bungee.api.ChatColor.GREEN;
 import static net.md_5.bungee.api.ChatColor.YELLOW;
 
-public class QueuePlugin extends Plugin implements Listener {
-
+public class QueuePlugin extends Plugin implements Listener
+{
     private Configuration config;
-    
+
     private Map<ServerInfo, Integer> maxPlayers = new HashMap<>();
     private Map<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private Map<ProxiedPlayer, QueuedPlayer> queuedPlayers = new ConcurrentHashMap<>();
 
+    public boolean debug = false;
+
     @Override
-    public void onEnable() {
-        try {
+    public void onEnable()
+    {
+        try
+        {
             this.config = loadConfiguration();
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             getLogger().log(Level.SEVERE, "Failed to load config.yml", e);
             return;
         }
@@ -49,13 +55,18 @@ public class QueuePlugin extends Plugin implements Listener {
         getProxy().getServers().values().forEach(this::setupServer);
         getProxy().registerChannel("queue:join");
         getProxy().getPluginManager().registerListener(this, this);
-        getProxy().getScheduler().schedule(this, () -> {
+        getProxy().getScheduler().schedule(this, () ->
+        {
             getQueues().stream().filter(Queue::canSend).forEach(Queue::sendNext);
         }, 50, 50, TimeUnit.MILLISECONDS);
-        getProxy().getScheduler().schedule(this, new PositionNotificationTask(this), 1, 1, TimeUnit.MINUTES);
-        getProxy().getScheduler().schedule(this, () -> {
-            queuedPlayers.forEach((pp, qp) -> {
-                if (!qp.isInQueue()) {
+
+        getProxy().getScheduler().schedule(this, new PositionNotificationTask(this), 30, 30, TimeUnit.SECONDS);
+        getProxy().getScheduler().schedule(this, () ->
+        {
+            queuedPlayers.forEach((pp, qp) ->
+            {
+                if (!qp.isInQueue())
+                {
                     return;
                 }
 
@@ -76,7 +87,8 @@ public class QueuePlugin extends Plugin implements Listener {
     /* (non-Javadoc)
      * Loads the configuration file
      */
-    private Configuration loadConfiguration() throws IOException {
+    private Configuration loadConfiguration() throws IOException
+    {
         File file = new File(getDataFolder(), "config.yml");
 
         if (file.exists()) {
@@ -84,28 +96,32 @@ public class QueuePlugin extends Plugin implements Listener {
         }
 
         // Create the file to save
-        if (!file.getParentFile().exists()) {
+        if (!file.getParentFile().exists())
+        {
             file.getParentFile().mkdirs();
         }
         file.createNewFile();
 
         // Load the default provided configuration and save it to the file
-        Configuration config = ConfigurationProvider.getProvider(YamlConfiguration.class)
-                .load(getResourceAsStream("config.yml"));
+        Configuration config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(getResourceAsStream("config.yml"));
         ConfigurationProvider.getProvider(YamlConfiguration.class).save(config, file);
         return config;
     }
 
     // Gets the max players for a server and caches it for later use
-    private void setupServer(ServerInfo info) {
+    private void setupServer(ServerInfo info)
+    {
         final String name = info.getName();
-        info.ping((p, err) -> {
-            if (p == null || p.getPlayers() == null) {
+        info.ping((p, err) ->
+        {
+            if (p == null || p.getPlayers() == null)
+            {
                 return;
             }
             int max = p.getPlayers().getMax();
             maxPlayers.put(info, max);
-            if (!queues.containsKey(name)) {
+            if (!queues.containsKey(name))
+            {
                 queues.put(name, new Queue(this, info));
             }
         });
@@ -136,8 +152,10 @@ public class QueuePlugin extends Plugin implements Listener {
      * @param player Player to find
      * @return QueuedPlayer wrapper
      */
-    public QueuedPlayer getQueued(ProxiedPlayer player) {
-        if (!queuedPlayers.containsKey(player)) {
+    public QueuedPlayer getQueued(ProxiedPlayer player)
+    {
+        if (!queuedPlayers.containsKey(player))
+        {
             QueuedPlayer queued = new QueuedPlayer(player, getPriority(player));
             queuedPlayers.put(player, queued);
             return queued;
@@ -160,9 +178,12 @@ public class QueuePlugin extends Plugin implements Listener {
      * @param player Player to check
      * @return players priority
      */
-    public int getPriority(ProxiedPlayer player) {
-        for (String rank : config.getSection("priorities").getKeys()) {
-            if (player.hasPermission("queue.priority." + rank)) {
+    public int getPriority(ProxiedPlayer player)
+    {
+        for (String rank : config.getSection("priorities").getKeys())
+        {
+            if (player.hasPermission("queue.priority." + rank))
+            {
                 return config.getInt("priorities." + rank);
             }
         }
@@ -194,7 +215,6 @@ public class QueuePlugin extends Plugin implements Listener {
     {
         ByteArrayDataInput in = ByteStreams.newDataInput(event.getData());
         String channel = event.getTag();
-
         if (channel.equals("queue:join"))
         {
             UUID uuid = UUID.fromString(in.readUTF());
@@ -229,7 +249,8 @@ public class QueuePlugin extends Plugin implements Listener {
             {
                 ServerInfo info = getProxy().getServerInfo(target);
                 player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "Sending you to " + info.getName() + "..."));
-                player.connect(info, (result, error) -> {
+                player.connect(info, (result, error) ->
+                {
                     if (result)
                     {
                         player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have been sent to " + info.getName()));
@@ -251,10 +272,26 @@ public class QueuePlugin extends Plugin implements Listener {
                 return;
             }
 
-            int index = queue.getIndexFor(weight);
-            queue.add(index, queued);
-            queued.setQueue(queue);
-            player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for " + queue.getTarget().getName()));
+            try
+            {
+                if (queue.getSavedIndex(player) > -1)
+                {
+                    int index = queue.getSavedIndex(player);
+                    queue.add(index, queued);
+                }
+                else
+                {
+                    int index = queue.getIndexFor(weight);
+                    queue.add(index, queued);
+                }
+                queued.setQueue(queue);
+            }
+            catch(NullPointerException e)
+            {
+                queue.add(queued);
+                queued.setQueue(queue);
+            }
+            player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for EarthMC"));
             player.sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", queued.getPosition() + 1, queue.size())));
             if (queue.isPaused())
             {
@@ -282,7 +319,15 @@ public class QueuePlugin extends Plugin implements Listener {
         if (queued != null && queued.getQueue() != null)
         {
             Queue queue = queued.getQueue();
-            queue.remove(queued);
+            try
+            {
+                queue.savePlayerPosition(player.getName(), queued.getPosition());
+                queue.remove(queued);
+            }
+            catch (NullPointerException e)
+            {
+                System.out.println("Exception occured when player left: " + e);
+            }
             queued.setQueue(null);
         }
     }

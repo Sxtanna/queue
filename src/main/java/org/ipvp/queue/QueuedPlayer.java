@@ -10,7 +10,8 @@ public final class QueuedPlayer {
     private int priority;
     private Queue queue;
 
-    public QueuedPlayer(ProxiedPlayer handle, int priority) {
+    public QueuedPlayer(ProxiedPlayer handle, int priority)
+    {
         Objects.requireNonNull(handle, "Player cannot be null");
         this.handle = handle;
         this.priority = priority;
@@ -21,7 +22,8 @@ public final class QueuedPlayer {
      *
      * @return ProxiedPlayer handle
      */
-    public ProxiedPlayer getHandle() {
+    public ProxiedPlayer getHandle()
+    {
         return handle;
     }
 
@@ -30,7 +32,8 @@ public final class QueuedPlayer {
      *
      * @return Priority information
      */
-    public int getPriority() {
+    public int getPriority()
+    {
         return priority;
     }
 
@@ -39,7 +42,8 @@ public final class QueuedPlayer {
      *
      * @return Queue entered, or null
      */
-    public Queue getQueue() {
+    public Queue getQueue()
+    {
         return queue;
     }
 
@@ -48,7 +52,8 @@ public final class QueuedPlayer {
      *
      * @return True if the player is in a queue, false otherwise
      */
-    public boolean isInQueue() {
+    public boolean isInQueue()
+    {
         return queue != null;
     }
 
@@ -58,13 +63,24 @@ public final class QueuedPlayer {
      * @return Queue position
      * @throws IllegalStateException When the player is not in a queue
      */
-    public int getPosition() {
-        if (!isInQueue()) {
+    public int getPosition()
+    {
+        if (!isInQueue())
+        {
             throw new IllegalStateException("Player is not queued");
         }
-        for (int i = 0 ; i < queue.size() ; i++) {
-            if (queue.get(i).equals(this)) {
-                return i;
+        for (int i = 0 ; i < queue.size() ; i++)
+        {
+            try
+            {
+                if (this.equals(queue.get(i)))
+                {
+                    return i;
+                }
+            }
+            catch (NullPointerException e)
+            {
+                return -1;
             }
         }
         return -1;
@@ -75,24 +91,26 @@ public final class QueuedPlayer {
      *
      * @param queue New queue to wait in
      */
-    public void setQueue(Queue queue) {
+    public void setQueue(Queue queue)
+    {
         this.queue = queue;
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         int prime = 31;
-        return prime * handle.hashCode()
-                + prime * priority;
+        return prime * handle.hashCode() + prime * priority;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof QueuedPlayer)) {
+    public boolean equals(Object o)
+    {
+        if (!(o instanceof QueuedPlayer))
+        {
             return false;
         }
         QueuedPlayer other = (QueuedPlayer) o;
-        return other.getHandle().equals(handle)
-                && other.priority == priority;
+        return other.getHandle().equals(handle) && other.priority == priority;
     }
 }

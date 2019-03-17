@@ -2,4 +2,4 @@ name: Queue
 main: org.ipvp.queue.QueuePlugin
 version: ${project.version}
 description: ${project.description}
-author: SainttX
+author: SainttX, updated by KarlofDuty

@@ -8,24 +8,40 @@ import org.ipvp.queue.Queue;
 import org.ipvp.queue.QueuePlugin;
 import org.ipvp.queue.QueuedPlayer;
 
-public class LeaveCommand extends QueuePluginCommand {
-
+public class LeaveCommand extends QueuePluginCommand
+{
     public LeaveCommand(QueuePlugin plugin) {
         super(plugin, "leavequeue");
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
-        if (!(sender instanceof ProxiedPlayer)) {
+    public void execute(CommandSender sender, String[] args)
+    {
+        if (!(sender instanceof ProxiedPlayer))
+        {
             sender.sendMessage(TextComponent.fromLegacyText("You must be a player to use this command"));
-        } else {
+        }
+        else
+        {
             ProxiedPlayer player = (ProxiedPlayer) sender;
             QueuedPlayer queued = getPlugin().getQueued(player);
-            if (!queued.isInQueue()) {
+            if (!queued.isInQueue())
+            {
                 sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are not in a queue"));
-            } else {
+            }
+            else
+            {
                 Queue queue = queued.getQueue();
-                queue.remove(queued);
+                try
+                {
+                    queue.savePlayerPosition(player.getName(), queued.getPosition());
+                    queue.remove(queued);
+                }
+                catch(NullPointerException e)
+                {
+                    System.out.println("Remove command tried to remove player from queue but got an exception: " + e);
+                }
+
                 queued.setQueue(null);
                 sender.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have left the queue"));
             }
