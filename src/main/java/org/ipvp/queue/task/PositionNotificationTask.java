@@ -24,25 +24,26 @@ public class PositionNotificationTask implements Runnable
                     p.getPosition() + 1, p.getQueue().size(), p.getQueue().getTarget().getName())));
 
             // EMC Specific roles
-            if (p.getHandle().hasPermission("queue.priority.firstjoinpriority"))
+            if (p.getHandle().hasPermission("queue.priority.staff"))
             {
-                p.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Priority access activated."));
+                p.getHandle().sendMessage(TextComponent.fromLegacyText(DARK_GREEN + "Staff" + GREEN + " access access activated."));
             }
-            else if (p.getHandle().hasPermission("queue.priority.donator"))
+            else if (p.getHandle().hasPermission("queue.priority.donator3"))
             {
-                p.getHandle().sendMessage(TextComponent.fromLegacyText(YELLOW + "Yellow" + GREEN + " donator access activated."));
+                p.getHandle().sendMessage(TextComponent.fromLegacyText(BLUE + "Blue" + GREEN + " donator access activated."));
+
             }
             else if (p.getHandle().hasPermission("queue.priority.donator2"))
             {
                 p.getHandle().sendMessage(TextComponent.fromLegacyText(LIGHT_PURPLE + "Purple" + GREEN + " donator access activated."));
             }
-            else if (p.getHandle().hasPermission("queue.priority.donator3"))
+            else if (p.getHandle().hasPermission("queue.priority.donator"))
             {
-                p.getHandle().sendMessage(TextComponent.fromLegacyText(BLUE + "Blue" + GREEN + " donator access activated."));
+                p.getHandle().sendMessage(TextComponent.fromLegacyText(YELLOW + "Yellow" + GREEN + " donator access activated."));
             }
-            else if (p.getHandle().hasPermission("queue.priority.staff"))
+            else if (p.getHandle().hasPermission("queue.priority.priority"))
             {
-                p.getHandle().sendMessage(TextComponent.fromLegacyText(DARK_GREEN + "Staff" + GREEN + " access access activated."));
+                p.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Priority access activated."));
             }
 
             if (p.getQueue().isPaused())
