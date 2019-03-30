@@ -9,6 +9,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import static net.md_5.bungee.api.ChatColor.*;
+import static net.md_5.bungee.api.ChatColor.GREEN;
+
 public class Queue extends ArrayList<QueuedPlayer>
 {
     /**
@@ -28,6 +31,11 @@ public class Queue extends ArrayList<QueuedPlayer>
         Objects.requireNonNull(target);
         this.plugin = plugin;
         this.target = target;
+    }
+
+    public long getLastSentTime()
+    {
+        return lastSentTime;
     }
 
     /**
@@ -171,6 +179,46 @@ public class Queue extends ArrayList<QueuedPlayer>
         return size();
     }
 
+    private void sendProgressMessages()
+    {
+        this.forEach(player ->
+        {
+            if (getLastSentTime() + 3000 < System.currentTimeMillis())
+            {
+                player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d " + YELLOW + "for EarthMC",
+                        player.getPosition() + 1, player.getQueue().size(), player.getQueue().getTarget().getName())));
+
+                // EMC Specific roles
+                if (player.getHandle().hasPermission("queue.priority.staff"))
+                {
+                    player.getHandle().sendMessage(TextComponent.fromLegacyText(DARK_GREEN + "Staff" + GREEN + " access access activated."));
+                }
+                else if (player.getHandle().hasPermission("queue.priority.donator3"))
+                {
+                    player.getHandle().sendMessage(TextComponent.fromLegacyText(BLUE + "Blue" + GREEN + " donator access activated."));
+
+                }
+                else if (player.getHandle().hasPermission("queue.priority.donator2"))
+                {
+                    player.getHandle().sendMessage(TextComponent.fromLegacyText(LIGHT_PURPLE + "Purple" + GREEN + " donator access activated."));
+                }
+                else if (player.getHandle().hasPermission("queue.priority.donator"))
+                {
+                    player.getHandle().sendMessage(TextComponent.fromLegacyText(YELLOW + "Yellow" + GREEN + " donator access activated."));
+                }
+                else if (player.getHandle().hasPermission("queue.priority.priority"))
+                {
+                    player.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Priority access activated."));
+                }
+
+                if (player.getQueue().isPaused())
+                {
+                    player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
+                }
+            }
+        });
+    }
+
     /**
      * Sends the next player at index {@code 0} to the target server.
      */
@@ -187,6 +235,7 @@ public class Queue extends ArrayList<QueuedPlayer>
         next.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "Sending you to EarthMC..."));
 
         plugin.getLogger().log(Level.INFO, next.getHandle().getName() + " was sent to " + target.getName() + " via Queue.");
+        sendProgressMessages();
         next.getHandle().connect(target, (result, error) ->
         {
             // What do we do if they can't connect?

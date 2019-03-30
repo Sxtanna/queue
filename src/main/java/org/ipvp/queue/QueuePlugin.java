@@ -17,7 +17,6 @@ import net.md_5.bungee.event.EventHandler;
 import org.ipvp.queue.command.LeaveCommand;
 import org.ipvp.queue.command.PauseCommand;
 import org.ipvp.queue.command.QueueCommand;
-import org.ipvp.queue.task.PositionNotificationTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +59,7 @@ public class QueuePlugin extends Plugin implements Listener
             getQueues().stream().filter(Queue::canSend).forEach(Queue::sendNext);
         }, 50, 50, TimeUnit.MILLISECONDS);
 
-        getProxy().getScheduler().schedule(this, new PositionNotificationTask(this), 30, 30, TimeUnit.SECONDS);
+        //getProxy().getScheduler().schedule(this, new PositionNotificationTask(this), 30, 30, TimeUnit.SECONDS);
         getProxy().getScheduler().schedule(this, () ->
         {
             queuedPlayers.forEach((pp, qp) ->
@@ -299,10 +298,19 @@ public class QueuePlugin extends Plugin implements Listener
             try
             {
                 int index = queue.getInsertionIndex(queued);
+                if(index < 0 || index >= queue.size())
+                {
+                    index = queue.size() - 1;
+                }
                 queue.add(index, queued);
                 queued.setQueue(queue);
             }
             catch(NullPointerException e)
+            {
+                queue.add(queued);
+                queued.setQueue(queue);
+            }
+            catch(IndexOutOfBoundsException e)
             {
                 queue.add(queued);
                 queued.setQueue(queue);
