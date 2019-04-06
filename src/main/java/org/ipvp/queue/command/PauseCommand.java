@@ -9,7 +9,7 @@ import org.ipvp.queue.QueuePlugin;
 public class PauseCommand extends QueuePluginCommand
 {
     public PauseCommand(QueuePlugin plugin) {
-        super(plugin, "pausequeue", "queue.command.pause");
+        super(plugin, "pausequeue", "queue.pause");
     }
 
     @Override

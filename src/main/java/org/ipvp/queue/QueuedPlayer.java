@@ -1,8 +1,13 @@
 package org.ipvp.queue;
 
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.Objects;
+
+import static net.md_5.bungee.api.ChatColor.GREEN;
+import static net.md_5.bungee.api.ChatColor.YELLOW;
 
 public final class QueuedPlayer {
 
@@ -54,7 +59,18 @@ public final class QueuedPlayer {
      */
     public boolean isInQueue()
     {
-        return queue != null;
+        if(queue != null)
+        {
+            if(!queue.contains(this))
+            {
+                QueuePlugin.instance.debugError("Player were set as in a queue but could not be found within it.");
+                getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "An error occured in the queue, you are set as queued to " + QueuePlugin.capitalizeFirstLetter(queue.getTarget().getName()) + " but you were not found in the queue."));
+                getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Attempting to requeue you in your last known position..."));
+                queue.enqueue(this);
+            }
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -67,7 +83,8 @@ public final class QueuedPlayer {
     {
         if (!isInQueue())
         {
-            throw new IllegalStateException("Player is not queued");
+            QueuePlugin.instance.debugWarn("Tried to check " + getHandle().getName() + "'s position but they were not in a queue.");
+            return -1;
         }
         for (int i = 0 ; i < queue.size() ; i++)
         {

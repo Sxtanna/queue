@@ -1,12 +1,13 @@
 package org.ipvp.queue.command;
 
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import org.ipvp.queue.Queue;
 import org.ipvp.queue.QueuePlugin;
 import org.ipvp.queue.QueuedPlayer;
+
+import static net.md_5.bungee.api.ChatColor.*;
 
 public class QueueCommand extends QueuePluginCommand
 {
@@ -26,11 +27,11 @@ public class QueueCommand extends QueuePluginCommand
                 if(sender.hasPermission("queue.debug"))
                 {
                     getPlugin().debug = !getPlugin().debug;
-                    sender.sendMessage(TextComponent.fromLegacyText(ChatColor.YELLOW + "Debug mode has been set to " + getPlugin().debug));
+                    sender.sendMessage(TextComponent.fromLegacyText(YELLOW + "Debug mode has been set to " + getPlugin().debug));
                 }
                 else
                 {
-                    sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You don't have permission to use /queue debug."));
+                    sender.sendMessage(TextComponent.fromLegacyText(RED + "You don't have permission to use /queue debug."));
                 }
                 return;
             }
@@ -45,23 +46,23 @@ public class QueueCommand extends QueuePluginCommand
                         {
                             if (queue.forgetPlayer(args[1]))
                             {
-                                sender.sendMessage(TextComponent.fromLegacyText(ChatColor.YELLOW + "Player position forgotten in the " + queue.getTarget().getName() + " queue."));
+                                sender.sendMessage(TextComponent.fromLegacyText(YELLOW + "Player position forgotten in the " + queue.getTarget().getName() + " queue."));
                                 found = true;
                             }
                         }
                         if(!found)
                         {
-                            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Player was not saved in any queue, make sure they have left the queue before running this command."));
+                            sender.sendMessage(TextComponent.fromLegacyText(RED + "Player was not saved in any queue, make sure they have left the queue before running this command."));
                         }
                     }
                     else
                     {
-                        sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Invalid arguments."));
+                        sender.sendMessage(TextComponent.fromLegacyText(RED + "Invalid arguments."));
                     }
                 }
                 else
                 {
-                    sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You don't have permission to use /queue forget."));
+                    sender.sendMessage(TextComponent.fromLegacyText(RED + "You don't have permission to use /queue forget."));
                 }
                 return;
             }
@@ -82,11 +83,11 @@ public class QueueCommand extends QueuePluginCommand
 
             if (queue == null)
             {
-                sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are not in a queue"));
+                sender.sendMessage(TextComponent.fromLegacyText(RED + "You are not in a queue"));
             }
             else
             {
-                sender.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + String.format("You are currently in position %d of %d for server %s", queuedPlayer.getPosition() + 1, queue.size(), queue.getTarget().getName())));
+                sender.sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", queuedPlayer.getPosition() + 1, queue.size(), queue.getTarget().getName())));
             }
         }
     }

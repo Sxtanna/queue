@@ -36,11 +36,14 @@ public class QueuePlugin extends Plugin implements Listener
     private Map<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private Map<ProxiedPlayer, QueuedPlayer> queuedPlayers = new ConcurrentHashMap<>();
 
-    public boolean debug = false;
+    public boolean debug = true;
+
+    public static QueuePlugin instance;
 
     @Override
     public void onEnable()
     {
+        instance = this;
         try
         {
             this.config = loadConfiguration();
@@ -56,8 +59,19 @@ public class QueuePlugin extends Plugin implements Listener
         getProxy().getPluginManager().registerListener(this, this);
         getProxy().getScheduler().schedule(this, () ->
         {
-            getQueues().stream().filter(Queue::canSend).forEach(Queue::sendNext);
-        }, 50, 50, TimeUnit.MILLISECONDS);
+            for (Queue queue : queues.values())
+            {
+                try
+                {
+                    queue.sendNext();
+                }
+                catch (Exception e)
+                {
+                    getLogger().severe("Failed to send next player to server " + queue.getTarget().getName() + ". Error: " + e);
+                    queue.failedAttempts++;
+                }
+            }
+        }, 100, 100, TimeUnit.MILLISECONDS);
 
         //getProxy().getScheduler().schedule(this, new PositionNotificationTask(this), 30, 30, TimeUnit.SECONDS);
         getProxy().getScheduler().schedule(this, () ->
@@ -141,7 +155,8 @@ public class QueuePlugin extends Plugin implements Listener
      * @param server Server to check
      * @return Queue for the server
      */
-    public Queue getQueue(String server) {
+    public Queue getQueue(String server)
+    {
         return queues.get(server);
     }
 
@@ -251,6 +266,12 @@ public class QueuePlugin extends Plugin implements Listener
             QueuedPlayer queued = getQueued(player);
             String target = in.readUTF();
             int weight = queued.getPriority();
+
+            if(player.getServer().getInfo().getName().equals(target))
+            {
+                player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are already on this server!"));
+                return;
+            }
             Queue queue = getQueue(target);
 
             if (queue == null)
@@ -267,60 +288,7 @@ public class QueuePlugin extends Plugin implements Listener
                     queues.put(server.getName(), queue);
                 }
             }
-
-            if (queued.getPriority() >= 999)
-            {
-                ServerInfo info = getProxy().getServerInfo(target);
-                player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "Sending you to " + info.getName() + "..."));
-                player.connect(info, (result, error) ->
-                {
-                    if (result)
-                    {
-                        player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have been sent to " + info.getName()));
-                    }
-                });
-                return;
-            }
-
-            if (queued.getQueue() != null)
-            {
-                if (queued.getQueue().getTarget().getName().equalsIgnoreCase(target))
-                {
-                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are already queued for this server"));
-                }
-                else
-                {
-                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Use /leavequeue to leave your current queue."));
-                }
-                return;
-            }
-
-            try
-            {
-                int index = queue.getInsertionIndex(queued);
-                if(index < 0 || index >= queue.size())
-                {
-                    index = queue.size() - 1;
-                }
-                queue.add(index, queued);
-                queued.setQueue(queue);
-            }
-            catch(NullPointerException e)
-            {
-                queue.add(queued);
-                queued.setQueue(queue);
-            }
-            catch(IndexOutOfBoundsException e)
-            {
-                queue.add(queued);
-                queued.setQueue(queue);
-            }
-            player.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for EarthMC"));
-            player.sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", queued.getPosition() + 1, queue.size())));
-            if (queue.isPaused())
-            {
-                player.sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
-            }
+            queue.enqueue(queued);
         }
     }
 
@@ -335,6 +303,15 @@ public class QueuePlugin extends Plugin implements Listener
     public void onSwitchServer(ServerSwitchEvent event)
     {
         handleLeave(event.getPlayer());
+    }
+
+    public static String capitalizeFirstLetter(String original)
+    {
+        if (original == null || original.length() == 0)
+        {
+            return original;
+        }
+        return original.substring(0, 1).toUpperCase() + original.substring(1);
     }
 
     private void handleLeave(ProxiedPlayer player)

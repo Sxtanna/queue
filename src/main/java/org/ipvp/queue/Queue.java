@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static net.md_5.bungee.api.ChatColor.*;
-import static net.md_5.bungee.api.ChatColor.GREEN;
 
 public class Queue extends ArrayList<QueuedPlayer>
 {
@@ -23,6 +22,8 @@ public class Queue extends ArrayList<QueuedPlayer>
     private final ServerInfo target;
     private boolean paused;
     private long lastSentTime;
+    public int failedAttempts = 0;
+    private long unpauseTime = Integer.MAX_VALUE;
     private HashMap<String, Integer> savedPositions = new HashMap<>();
 
     public Queue(QueuePlugin plugin, ServerInfo target)
@@ -75,6 +76,12 @@ public class Queue extends ArrayList<QueuedPlayer>
      */
     public boolean canSend()
     {
+        if(System.currentTimeMillis() >= unpauseTime)
+        {
+            paused = false;
+            failedAttempts = 0;
+            unpauseTime = Integer.MAX_VALUE;
+        }
         return !isPaused() &&
                 !isEmpty() &&
                 target.getPlayers().size() < plugin.getMaxPlayers(target) &&
@@ -85,29 +92,20 @@ public class Queue extends ArrayList<QueuedPlayer>
      * Saves players position in the queue when they leave so they can get it back if they rejoin
      * @param playerName The player to save
      */
-    public void savePlayerPosition(String playerName)
-    {
-        savePlayerPosition(playerName, 0);
-    }
-
     public void savePlayerPosition(String playerName, int index)
     {
         savedPositions.put(playerName.toLowerCase(), index);
-        plugin.getProxy().getScheduler().schedule(plugin, new Runnable()
+        plugin.getProxy().getScheduler().schedule(plugin, () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                savedPositions.remove(playerName.toLowerCase());
+            }
+            catch (Exception e)
+            {
+                if(plugin.debug)
                 {
-                    savedPositions.remove(playerName.toLowerCase());
-                }
-                catch (Exception e)
-                {
-                    if(plugin.debug)
-                    {
-                        plugin.getLogger().log(Level.WARNING, "Failed to delete player from savedPositions, this is probably fine. " + e.getMessage());
-                    }
+                    plugin.getLogger().log(Level.WARNING, "Failed to delete player from savedPositions, this is probably fine. " + e.getMessage());
                 }
             }
         }, 15L,  TimeUnit.MINUTES);
@@ -118,6 +116,70 @@ public class Queue extends ArrayList<QueuedPlayer>
         return savedPositions.remove(playerName.toLowerCase()) != null;
     }
 
+    public void enqueue(QueuedPlayer player)
+    {
+        if (player.getQueue() != null)
+        {
+            if (player.getQueue().getTarget().getName().equalsIgnoreCase(target.getName()))
+            {
+                player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are already queued for this server"));
+            }
+            else
+            {
+                player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Use /leavequeue to leave your current queue first."));
+            }
+            return;
+        }
+        try
+        {
+            int index = getInsertionIndex(player);
+            if(index < 0 || index >= size())
+            {
+                index = size() - 1;
+            }
+            add(index, player);
+            player.setQueue(this);
+        }
+        catch(NullPointerException | IndexOutOfBoundsException e)
+        {
+            // Player is added at the end if an error occured when trying to find their position
+            add(player);
+            player.setQueue(this);
+        }
+        player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for " + QueuePlugin.capitalizeFirstLetter(target.getName())));
+        player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", player.getPosition() + 1, size())));
+        SendPriorityMessage(player.getHandle());
+        if (paused)
+        {
+            player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
+        }
+    }
+
+    // Sends EMC specific priority messages
+    private void SendPriorityMessage(ProxiedPlayer player)
+    {
+        if (player.hasPermission("queue.priority.staff"))
+        {
+            player.sendMessage(TextComponent.fromLegacyText(DARK_GREEN + "Staff" + GREEN + " access activated."));
+        }
+        else if (player.hasPermission("queue.priority.donator3"))
+        {
+            player.sendMessage(TextComponent.fromLegacyText(BLUE + "Blue" + GREEN + " donator access activated."));
+
+        }
+        else if (player.hasPermission("queue.priority.donator2"))
+        {
+            player.sendMessage(TextComponent.fromLegacyText(DARK_PURPLE + "Purple" + GREEN + " donator access activated."));
+        }
+        else if (player.hasPermission("queue.priority.donator"))
+        {
+            player.sendMessage(TextComponent.fromLegacyText(YELLOW + "Yellow" + GREEN + " donator access activated."));
+        }
+        else if (player.hasPermission("queue.priority.priority"))
+        {
+            player.sendMessage(TextComponent.fromLegacyText(GREEN + "Priority access activated."));
+        }
+    }
 
     public int getInsertionIndex(QueuedPlayer player)
     {
@@ -181,40 +243,26 @@ public class Queue extends ArrayList<QueuedPlayer>
 
     private void sendProgressMessages()
     {
+        if (getLastSentTime() + 3000 > System.currentTimeMillis())
+        {
+            return;
+        }
+
         this.forEach(player ->
         {
-            if (getLastSentTime() + 3000 < System.currentTimeMillis())
+            try
             {
-                player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d " + YELLOW + "for EarthMC",
+                savePlayerPosition(player.getHandle().getName(), player.getPosition());
+                player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d " + YELLOW + "for " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "",
                         player.getPosition() + 1, player.getQueue().size(), player.getQueue().getTarget().getName())));
-
-                // EMC Specific roles
-                if (player.getHandle().hasPermission("queue.priority.staff"))
-                {
-                    player.getHandle().sendMessage(TextComponent.fromLegacyText(DARK_GREEN + "Staff" + GREEN + " access access activated."));
-                }
-                else if (player.getHandle().hasPermission("queue.priority.donator3"))
-                {
-                    player.getHandle().sendMessage(TextComponent.fromLegacyText(BLUE + "Blue" + GREEN + " donator access activated."));
-
-                }
-                else if (player.getHandle().hasPermission("queue.priority.donator2"))
-                {
-                    player.getHandle().sendMessage(TextComponent.fromLegacyText(LIGHT_PURPLE + "Purple" + GREEN + " donator access activated."));
-                }
-                else if (player.getHandle().hasPermission("queue.priority.donator"))
-                {
-                    player.getHandle().sendMessage(TextComponent.fromLegacyText(YELLOW + "Yellow" + GREEN + " donator access activated."));
-                }
-                else if (player.getHandle().hasPermission("queue.priority.priority"))
-                {
-                    player.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Priority access activated."));
-                }
-
                 if (player.getQueue().isPaused())
                 {
                     player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
                 }
+            }
+            catch (Exception e)
+            {
+                QueuePlugin.instance.debugError("Error sending update message to player: " + player.getHandle().getName() + " in the queue to " + target.getName());
             }
         });
     }
@@ -226,27 +274,50 @@ public class Queue extends ArrayList<QueuedPlayer>
     {
         if (!canSend())
         {
-            throw new IllegalStateException("Cannot send next player in queue");
+            return;
         }
 
+        if(failedAttempts >= 5)
+        {
+            paused = true;
+            unpauseTime = System.currentTimeMillis() + 30000;
+            QueuePlugin.instance.debugError("Queue is paused for 30 seconds due to repeated failed attempts to send players.");
+            for (QueuedPlayer player : this)
+            {
+                player.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Queue is paused for 30 seconds as the target server refused the last 5 players."));
+            }
+            return;
+        }
+
+        lastSentTime = System.currentTimeMillis();
         QueuedPlayer next = remove(0);
+        if(next == null)
+        {
+
+            return;
+        }
         next.setQueue(null);
-        savePlayerPosition(next.getHandle().getName());
-        next.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "Sending you to EarthMC..."));
+        next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Sending you to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "..."));
 
         plugin.getLogger().log(Level.INFO, next.getHandle().getName() + " was sent to " + target.getName() + " via Queue.");
-        sendProgressMessages();
+
         next.getHandle().connect(target, (result, error) ->
         {
             // What do we do if they can't connect?
             if (result)
             {
-                next.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have been sent to EarthMC"));
-                lastSentTime = System.currentTimeMillis();
+                next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "You have been sent to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + ""));
+                failedAttempts = 0;
+                sendProgressMessages();
             }
             else
             {
-                next.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Unable to connect to EarthMC."));
+                QueuePlugin.instance.debugError("Failed to send player " + next.getHandle().getName() + " to server " + target.getName() + ". Error: " + error);
+                next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Unable to connect to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "."));
+                next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Attempting to requeue you..."));
+                add(0, next);
+                next.setQueue(this);
+                failedAttempts++;
             }
         });
     }
