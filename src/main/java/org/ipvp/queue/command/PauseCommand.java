@@ -30,7 +30,7 @@ public class PauseCommand extends QueuePluginCommand
             else
             {
                 queue.setPaused(!queue.isPaused());
-                // TODO: Message all players in the queue
+                queue.unpauseTime = Long.MAX_VALUE;
                 sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + String.format("You have %s the queue for server %s", queue.isPaused() ? "paused" : "resumed", args[0])));
             }
         }

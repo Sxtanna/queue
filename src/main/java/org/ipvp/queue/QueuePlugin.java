@@ -67,7 +67,7 @@ public class QueuePlugin extends Plugin implements Listener
                 }
                 catch (Exception e)
                 {
-                    getLogger().severe("Failed to send next player to server " + queue.getTarget().getName() + ". Error: " + e);
+                    getLogger().severe("[SendNextHandler] Failed to send next player to server " + queue.getTarget().getName() + ". Error: " + e);
                     queue.failedAttempts++;
                 }
             }

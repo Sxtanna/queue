@@ -16,14 +16,15 @@ public class Queue extends ArrayList<QueuedPlayer>
     /**
      * The time between ticking the queue to send a new player
      */
-    public static final long TIME_BETWEEN_SENDING_MILLIS = 500L;
+    public static final long TIME_BETWEEN_SENDING_MILLIS = 1000L;
 
     private final QueuePlugin plugin;
     private final ServerInfo target;
     private boolean paused;
     private long lastSentTime;
+    private long lastPositionMessageSent = 0;
     public int failedAttempts = 0;
-    private long unpauseTime = Integer.MAX_VALUE;
+    public long unpauseTime = Long.MAX_VALUE;
     private HashMap<String, Integer> savedPositions = new HashMap<>();
 
     public Queue(QueuePlugin plugin, ServerInfo target)
@@ -78,9 +79,10 @@ public class Queue extends ArrayList<QueuedPlayer>
     {
         if(System.currentTimeMillis() >= unpauseTime)
         {
+            QueuePlugin.instance.debugWarn("Unpausing automatically.");
             paused = false;
             failedAttempts = 0;
-            unpauseTime = Integer.MAX_VALUE;
+            unpauseTime = Long.MAX_VALUE;
         }
         return !isPaused() &&
                 !isEmpty() &&
@@ -123,28 +125,33 @@ public class Queue extends ArrayList<QueuedPlayer>
             if (player.getQueue().getTarget().getName().equalsIgnoreCase(target.getName()))
             {
                 player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You are already queued for this server"));
+                return;
             }
             else
             {
-                player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Use /leavequeue to leave your current queue first."));
+                player.getQueue().savePlayerPosition(player.toString().toLowerCase(), player.getPosition());
+                player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.YELLOW + "You were removed from the " + player.getQueue().getTarget().getName() + " queue."));
+                player.getQueue().remove(player);
             }
-            return;
         }
+
         try
         {
+            player.setQueue(this);
             int index = getInsertionIndex(player);
             if(index < 0 || index >= size())
             {
-                index = size() - 1;
+                add(player);
             }
-            add(index, player);
-            player.setQueue(this);
+            else
+            {
+                add(index, player);
+            }
         }
         catch(NullPointerException | IndexOutOfBoundsException e)
         {
             // Player is added at the end if an error occured when trying to find their position
             add(player);
-            player.setQueue(this);
         }
         player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for " + QueuePlugin.capitalizeFirstLetter(target.getName())));
         player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", player.getPosition() + 1, size())));
@@ -243,7 +250,7 @@ public class Queue extends ArrayList<QueuedPlayer>
 
     private void sendProgressMessages()
     {
-        if (getLastSentTime() + 3000 > System.currentTimeMillis())
+        if (lastPositionMessageSent + 3000 > System.currentTimeMillis())
         {
             return;
         }
@@ -265,6 +272,7 @@ public class Queue extends ArrayList<QueuedPlayer>
                 QueuePlugin.instance.debugError("Error sending update message to player: " + player.getHandle().getName() + " in the queue to " + target.getName());
             }
         });
+        lastPositionMessageSent = System.currentTimeMillis();
     }
 
     /**
@@ -280,7 +288,7 @@ public class Queue extends ArrayList<QueuedPlayer>
         if(failedAttempts >= 5)
         {
             paused = true;
-            unpauseTime = System.currentTimeMillis() + 30000;
+            unpauseTime = System.currentTimeMillis() + 20000;
             QueuePlugin.instance.debugError("Queue is paused for 30 seconds due to repeated failed attempts to send players.");
             for (QueuedPlayer player : this)
             {
@@ -293,31 +301,40 @@ public class Queue extends ArrayList<QueuedPlayer>
         QueuedPlayer next = remove(0);
         if(next == null)
         {
-
             return;
         }
         next.setQueue(null);
         next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Sending you to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "..."));
 
-        plugin.getLogger().log(Level.INFO, next.getHandle().getName() + " was sent to " + target.getName() + " via Queue.");
+        plugin.getLogger().log(Level.INFO, "Preparing to send " + next.getHandle().getName() + " to " + target.getName() + " via Queue.");
 
         next.getHandle().connect(target, (result, error) ->
         {
             // What do we do if they can't connect?
             if (result)
             {
-                next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "You have been sent to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + ""));
-                failedAttempts = 0;
-                sendProgressMessages();
+                try
+                {
+                    plugin.getLogger().log(Level.INFO, next.getHandle().getName() + " was sent to " + target.getName() + " via Queue.");
+                    next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "You have been sent to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + ""));
+                    failedAttempts = 0;
+                    sendProgressMessages();
+                }
+                catch(Exception e)
+                {
+                    plugin.debugError("[ConnectHandler] Something happened after successful connection: " + e);
+                }
             }
             else
             {
-                QueuePlugin.instance.debugError("Failed to send player " + next.getHandle().getName() + " to server " + target.getName() + ". Error: " + error);
+                QueuePlugin.instance.debugError("[SendNext] Failed to send player " + next.getHandle().getName() + " to server " + target.getName() + ". Error: " + error);
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Unable to connect to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "."));
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Attempting to requeue you..."));
                 add(0, next);
                 next.setQueue(this);
                 failedAttempts++;
+                QueuePlugin.instance.debugError("Failed count is now at " + failedAttempts);
+                lastSentTime = System.currentTimeMillis() + 1000;
             }
         });
     }
