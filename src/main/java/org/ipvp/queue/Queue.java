@@ -151,6 +151,7 @@ public class Queue extends ArrayList<QueuedPlayer>
         catch(NullPointerException | IndexOutOfBoundsException e)
         {
             // Player is added at the end if an error occured when trying to find their position
+            player.setQueue(this);
             add(player);
         }
         player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for " + QueuePlugin.capitalizeFirstLetter(target.getName())));
