@@ -36,7 +36,6 @@ public class JoinCommand extends QueuePluginCommand
 		ProxiedPlayer proxiedPlayer = (ProxiedPlayer)sender;
 		QueuedPlayer queuedPlayer = getPlugin().getQueued(proxiedPlayer);
 		String target = args[0].toLowerCase();
-		int weight = getPlugin().getPriority(proxiedPlayer);
 
 		if(proxiedPlayer.getServer().getInfo().getName().equals(target))
 		{

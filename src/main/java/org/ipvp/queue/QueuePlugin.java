@@ -1,7 +1,6 @@
 package org.ipvp.queue;
 
 import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -14,10 +13,7 @@ import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.md_5.bungee.event.EventHandler;
-import org.ipvp.queue.command.JoinCommand;
-import org.ipvp.queue.command.LeaveCommand;
-import org.ipvp.queue.command.PauseCommand;
-import org.ipvp.queue.command.QueueCommand;
+import org.ipvp.queue.command.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,9 +21,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-
-import static net.md_5.bungee.api.ChatColor.GREEN;
-import static net.md_5.bungee.api.ChatColor.YELLOW;
 
 public class QueuePlugin extends Plugin implements Listener
 {
@@ -72,7 +65,7 @@ public class QueuePlugin extends Plugin implements Listener
                     queue.failedAttempts++;
                 }
             }
-        }, 100, 100, TimeUnit.MILLISECONDS);
+        }, 250, 250, TimeUnit.MILLISECONDS);
 
         getProxy().getPluginManager().registerCommand(this, new LeaveCommand(this));
         getProxy().getPluginManager().registerCommand(this, new PauseCommand(this));
@@ -80,9 +73,6 @@ public class QueuePlugin extends Plugin implements Listener
         getProxy().getPluginManager().registerCommand(this, new JoinCommand(this));
     }
 
-    /* (non-Javadoc)
-     * Loads the configuration file
-     */
     private Configuration loadConfiguration() throws IOException
     {
         File file = new File(getDataFolder(), "config.yml");
@@ -249,7 +239,6 @@ public class QueuePlugin extends Plugin implements Listener
 
             QueuedPlayer queued = getQueued(player);
             String target = in.readUTF();
-            int weight = queued.getPriority();
 
             if(player.getServer().getInfo().getName().equals(target))
             {
@@ -286,10 +275,14 @@ public class QueuePlugin extends Plugin implements Listener
     @EventHandler
     public void onSwitchServer(ServerSwitchEvent event)
     {
-        // If the server they have connected to is the one they are queueing to remove them from the queue
-        if(getQueued(event.getPlayer()).getQueue().getTarget().getName().equals(event.getPlayer().getServer().getInfo().getName()))
+        QueuedPlayer queued = queuedPlayers.get(event.getPlayer());
+        if (queued != null && queued.getQueue() != null)
         {
-            handleLeave(event.getPlayer());
+            // If the server they have connected to is the one they are queueing to remove them from the queue
+            if(queued.getQueue().getTarget().getName().equals(event.getPlayer().getServer().getInfo().getName()))
+            {
+                handleLeave(event.getPlayer());
+            }
         }
     }
 

@@ -6,7 +6,6 @@ import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static net.md_5.bungee.api.ChatColor.*;
@@ -16,7 +15,7 @@ public class Queue extends ArrayList<QueuedPlayer>
     /**
      * The time between ticking the queue to send a new player
      */
-    public static final long TIME_BETWEEN_SENDING_MILLIS = 1000L;
+    private static final long TIME_BETWEEN_SENDING_MILLIS = 1000L;
 
     private final QueuePlugin plugin;
     private final ServerInfo target;
@@ -25,7 +24,8 @@ public class Queue extends ArrayList<QueuedPlayer>
     private long lastPositionMessageSent = 0;
     public int failedAttempts = 0;
     public long unpauseTime = Long.MAX_VALUE;
-    private HashMap<String, Integer> savedPositions = new HashMap<>();
+
+    private TimedList rememberedPlayers = new TimedList();
 
     public Queue(QueuePlugin plugin, ServerInfo target)
     {
@@ -33,11 +33,6 @@ public class Queue extends ArrayList<QueuedPlayer>
         Objects.requireNonNull(target);
         this.plugin = plugin;
         this.target = target;
-    }
-
-    public long getLastSentTime()
-    {
-        return lastSentTime;
     }
 
     /**
@@ -91,33 +86,28 @@ public class Queue extends ArrayList<QueuedPlayer>
     }
 
     /**
-     * Saves players position in the queue when they leave so they can get it back if they rejoin
-     * @param playerName The player to save
+     * Saves players position in the queue when they leave so they can get it back if they rejoin.
+     * @param playerName The player to save.
      */
     public void savePlayerPosition(String playerName, int index)
     {
-        savedPositions.put(playerName.toLowerCase(), index);
-        plugin.getProxy().getScheduler().schedule(plugin, () ->
-        {
-            try
-            {
-                savedPositions.remove(playerName.toLowerCase());
-            }
-            catch (Exception e)
-            {
-                if(plugin.debug)
-                {
-                    plugin.getLogger().log(Level.WARNING, "Failed to delete player from savedPositions, this is probably fine. " + e.getMessage());
-                }
-            }
-        }, 15L,  TimeUnit.MINUTES);
+        rememberedPlayers.rememberPosition(playerName, index);
     }
 
+    /**
+     * Removes a player's remembered queue position.
+     * @param playerName The name of the player to forget.
+     * @return true if player is forgotten, false if not found.
+     */
     public boolean forgetPlayer(String playerName)
     {
-        return savedPositions.remove(playerName.toLowerCase()) != null;
+        return rememberedPlayers.forgetPlayer(playerName);
     }
 
+    /**
+     * Places a player in the queue, removes them from their old queue if they are already in one.
+     * @param player The player to enqueue
+     */
     public void enqueue(QueuedPlayer player)
     {
         if (player.getQueue() != null)
@@ -163,7 +153,10 @@ public class Queue extends ArrayList<QueuedPlayer>
         }
     }
 
-    // Sends EMC specific priority messages
+    /**
+     * Sends EMC specific priority messages.
+     * @param player The player to send messages to.
+     */
     private void SendPriorityMessage(ProxiedPlayer player)
     {
         if (player.hasPermission("queue.priority.staff"))
@@ -189,39 +182,23 @@ public class Queue extends ArrayList<QueuedPlayer>
         }
     }
 
-    public int getInsertionIndex(QueuedPlayer player)
+    private int getInsertionIndex(QueuedPlayer player)
     {
-        int savedIndex = getSavedIndex(player.getHandle());
+        int savedIndex = Math.min(rememberedPlayers.getRememberedPosition(player.getHandle().getName().toLowerCase()), this.size());
         int priorityIndex = getIndexByPriority(player.getPriority());
 
         if (savedIndex < priorityIndex)
         {
             plugin.debugLog("Inserted player " + player.getHandle().getName() + " into the " + target.getName() + " queue in saved position " + savedIndex + ".");
-            plugin.debugLog("Priority position was " + priorityIndex + " and queue size was " + size() + ". Priority weight was " + player.getPriority() + ". Player position was remembered: " + savedPositions.containsKey(player.getHandle().getName().toLowerCase()) + ".");
+            plugin.debugLog("Priority position was " + priorityIndex + " and queue size was " + size() + ". Priority weight was " + player.getPriority() + ".");
             return savedIndex;
         }
         else
         {
             plugin.debugLog("Inserted player " + player.getHandle().getName() + " into the " + target.getName() + " queue in priority position " + priorityIndex + ".");
-            plugin.debugLog("Saved position was " + savedIndex + " and queue size was " + size() + ". Priority weight was " + player.getPriority() + ". Player position was remembered: " + savedPositions.containsKey(player.getHandle().getName().toLowerCase()) + ".");
+            plugin.debugLog("Saved position was " + savedIndex + " and queue size was " + size() + ". Priority weight was " + player.getPriority() + ".");
             return priorityIndex;
         }
-    }
-    /**
-     * Checks if a player has recently been in the queue and returns their old position or the end of the queue if so
-     * @param player The player to look up
-     * @return -1 if the player is not listed, the position for them to be inserted into otherwise
-     */
-    private int getSavedIndex(ProxiedPlayer player)
-    {
-        if(savedPositions.containsKey(player.getName().toLowerCase()))
-        {
-            if (savedPositions.get(player.getName().toLowerCase()) < this.size())
-            {
-                return savedPositions.get(player.getName().toLowerCase());
-            }
-        }
-        return size();
     }
 
     /**
@@ -239,7 +216,7 @@ public class Queue extends ArrayList<QueuedPlayer>
         }
 
         // Changed to not place priority players in the first 5 slots
-        for (int i = 5; i < size(); i++)
+        for (int i = 3; i < size(); i++)
         {
             if (weight > get(i).getPriority())
             {
