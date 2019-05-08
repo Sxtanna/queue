@@ -29,8 +29,14 @@ public class PauseCommand extends QueuePluginCommand
             }
             else
             {
-                queue.setPaused(!queue.isPaused());
-                queue.unpauseTime = Long.MAX_VALUE;
+                if(queue.unpauseTime != Long.MAX_VALUE)
+                {
+                    queue.unpauseTime = Long.MAX_VALUE;
+                }
+                else
+                {
+                    queue.setPaused(!queue.isPaused());
+                }
                 sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + String.format("You have %s the queue for server %s", queue.isPaused() ? "paused" : "resumed", args[0])));
             }
         }

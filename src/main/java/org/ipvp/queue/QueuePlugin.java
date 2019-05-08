@@ -1,7 +1,6 @@
 package org.ipvp.queue;
 
 import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -14,9 +13,7 @@ import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.md_5.bungee.event.EventHandler;
-import org.ipvp.queue.command.LeaveCommand;
-import org.ipvp.queue.command.PauseCommand;
-import org.ipvp.queue.command.QueueCommand;
+import org.ipvp.queue.command.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,15 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import static net.md_5.bungee.api.ChatColor.GREEN;
-import static net.md_5.bungee.api.ChatColor.YELLOW;
-
 public class QueuePlugin extends Plugin implements Listener
 {
     private Configuration config;
 
     private Map<ServerInfo, Integer> maxPlayers = new HashMap<>();
-    private Map<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    public Map<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private Map<ProxiedPlayer, QueuedPlayer> queuedPlayers = new ConcurrentHashMap<>();
 
     public boolean debug = true;
@@ -71,35 +65,14 @@ public class QueuePlugin extends Plugin implements Listener
                     queue.failedAttempts++;
                 }
             }
-        }, 100, 100, TimeUnit.MILLISECONDS);
+        }, 250, 250, TimeUnit.MILLISECONDS);
 
-        //getProxy().getScheduler().schedule(this, new PositionNotificationTask(this), 30, 30, TimeUnit.SECONDS);
-        getProxy().getScheduler().schedule(this, () ->
-        {
-            queuedPlayers.forEach((pp, qp) ->
-            {
-                if (!qp.isInQueue())
-                {
-                    return;
-                }
-
-                ByteArrayDataOutput out = ByteStreams.newDataOutput();
-                out.writeUTF("QueuePosition");
-                out.writeUTF(pp.getUniqueId().toString());
-                out.writeInt(qp.getPosition());
-                out.writeUTF(qp.getQueue().getTarget().getName());
-                out.writeInt(qp.getQueue().size());
-                pp.getServer().sendData("BungeeCord", out.toByteArray());
-            });
-        }, 1L, 1L, TimeUnit.SECONDS);
         getProxy().getPluginManager().registerCommand(this, new LeaveCommand(this));
         getProxy().getPluginManager().registerCommand(this, new PauseCommand(this));
         getProxy().getPluginManager().registerCommand(this, new QueueCommand(this));
+        getProxy().getPluginManager().registerCommand(this, new JoinCommand(this));
     }
 
-    /* (non-Javadoc)
-     * Loads the configuration file
-     */
     private Configuration loadConfiguration() throws IOException
     {
         File file = new File(getDataFolder(), "config.yml");
@@ -170,6 +143,7 @@ public class QueuePlugin extends Plugin implements Listener
     {
         if (!queuedPlayers.containsKey(player))
         {
+            debugLog("Player did not already exist");
             QueuedPlayer queued = new QueuedPlayer(player, getPriority(player));
             queuedPlayers.put(player, queued);
             return queued;
@@ -265,7 +239,6 @@ public class QueuePlugin extends Plugin implements Listener
 
             QueuedPlayer queued = getQueued(player);
             String target = in.readUTF();
-            int weight = queued.getPriority();
 
             if(player.getServer().getInfo().getName().equals(target))
             {
@@ -302,7 +275,15 @@ public class QueuePlugin extends Plugin implements Listener
     @EventHandler
     public void onSwitchServer(ServerSwitchEvent event)
     {
-        handleLeave(event.getPlayer());
+        QueuedPlayer queued = queuedPlayers.get(event.getPlayer());
+        if (queued != null && queued.getQueue() != null)
+        {
+            // If the server they have connected to is the one they are queueing to remove them from the queue
+            if(queued.getQueue().getTarget().getName().equals(event.getPlayer().getServer().getInfo().getName()))
+            {
+                handleLeave(event.getPlayer());
+            }
+        }
     }
 
     public static String capitalizeFirstLetter(String original)
