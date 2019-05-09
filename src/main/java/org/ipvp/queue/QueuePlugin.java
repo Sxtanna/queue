@@ -26,9 +26,9 @@ public class QueuePlugin extends Plugin implements Listener
 {
     private Configuration config;
 
-    private Map<ServerInfo, Integer> maxPlayers = new HashMap<>();
+    private ConcurrentHashMap<ServerInfo, Integer> maxPlayers = new ConcurrentHashMap<>();
     public Map<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private Map<ProxiedPlayer, QueuedPlayer> queuedPlayers = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<ProxiedPlayer, QueuedPlayer> queuedPlayers = new ConcurrentHashMap<>();
 
     public boolean debug = true;
 

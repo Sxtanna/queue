@@ -10,7 +10,7 @@ import java.util.logging.Level;
 
 import static net.md_5.bungee.api.ChatColor.*;
 
-public class Queue extends ArrayList<QueuedPlayer>
+public class Queue extends Vector<QueuedPlayer>
 {
     /**
      * The time between ticking the queue to send a new player
@@ -281,6 +281,12 @@ public class Queue extends ArrayList<QueuedPlayer>
         {
             return;
         }
+
+        if(next.getHandle() == null)
+		{
+			return;
+		}
+
         next.setQueue(null);
         next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Sending you to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "..."));
 
@@ -308,8 +314,10 @@ public class Queue extends ArrayList<QueuedPlayer>
                 QueuePlugin.instance.debugError("[SendNext] Failed to send player " + next.getHandle().getName() + " to server " + target.getName() + ". Error: " + error);
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Unable to connect to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "."));
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Attempting to requeue you..."));
-                add(0, next);
-                next.setQueue(this);
+				savePlayerPosition(next.getHandle().getName(), 0);
+
+                // Gets the player object again to make sure there isn't some concurrent modification issue with bungeecord causing issues.
+                enqueue(plugin.getQueued(plugin.getProxy().getPlayer(next.getHandle().getName())));
                 failedAttempts++;
                 QueuePlugin.instance.debugError("Failed count is now at " + failedAttempts);
                 lastSentTime = System.currentTimeMillis() + 1000;

@@ -2,15 +2,17 @@ package org.ipvp.queue;
 
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TimedList
 {
-	private HashMap<String, Integer> players = new HashMap<>();
-	private ArrayList<SimpleEntry<Long, String>> expirationTimes = new ArrayList<>();
+	private ConcurrentHashMap<String, Integer> players = new ConcurrentHashMap<>();
+	private Vector<SimpleEntry<Long, String>> expirationTimes = new Vector<>();
 	private static long EXPIRATION_TIME = 900000;
 
 	public void cleanup()
 	{
+
 		while(!expirationTimes.isEmpty())
 		{
 			if(expirationTimes.get(0).getKey() > System.currentTimeMillis())
@@ -36,17 +38,7 @@ public class TimedList
 		cleanup();
 
 		// If the player is already registered find its old timestamp and delete it
-		if(players.containsKey(playerName))
-		{
-			for (SimpleEntry<Long, String> timestamp : expirationTimes)
-			{
-				if(timestamp.getValue().equals(playerName))
-				{
-					expirationTimes.remove(timestamp);
-					break;
-				}
-			}
-		}
+		forgetPlayer(playerName);
 
 		expirationTimes.add(new SimpleEntry<>(System.currentTimeMillis() + EXPIRATION_TIME, playerName));
 		players.put(playerName, position);
