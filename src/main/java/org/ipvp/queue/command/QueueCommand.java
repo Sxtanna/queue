@@ -35,6 +35,41 @@ public class QueueCommand extends QueuePluginCommand
                 }
                 return;
             }
+            else if (args[0].equals("list"))
+            {
+                if(sender.hasPermission("queue.list"))
+                {
+                    if(args.length > 1)
+                    {
+                        Queue queue = getPlugin().getQueue(args[1]);
+
+                        if (queue == null)
+                        {
+                            sender.sendMessage(TextComponent.fromLegacyText(RED + "There is no queue set up for that server."));
+                        }
+                        else
+                        {
+                            StringBuilder response = new StringBuilder();
+                            response.append(GOLD).append("-------------- Players in queue --------------\n");
+                            response.append(GREEN).append(String.format("%-5s %-40s %s", "Pos.", "Player.", "Priority.\n"));
+                            for (QueuedPlayer queuedPlayer : queue)
+                            {
+                                response.append(GOLD).append(String.format("%-5s %s%-40s %s(%d)\n", (queuedPlayer.getPosition() + 1) + ".", GREEN, queuedPlayer.getHandle().getName(), GOLD, queuedPlayer.getPriority()));
+                            }
+                            sender.sendMessage(TextComponent.fromLegacyText(response.toString()));
+                        }
+                    }
+                    else
+                    {
+                        sender.sendMessage(TextComponent.fromLegacyText(RED + "Invalid arguments."));
+                    }
+                }
+                else
+                {
+                    sender.sendMessage(TextComponent.fromLegacyText(RED + "You don't have permission to use /queue list."));
+                }
+                return;
+            }
             else if (args[0].equals("forget"))
             {
                 if(sender.hasPermission("queue.forget"))
