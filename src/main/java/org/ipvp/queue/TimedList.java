@@ -34,6 +34,8 @@ public class TimedList
 	 */
 	public void rememberPosition(String playerName, int position)
 	{
+		playerName = playerName.toLowerCase();
+
 		// Remove expired players first
 		cleanup();
 
@@ -51,6 +53,7 @@ public class TimedList
 	 */
 	public boolean forgetPlayer(String playerName)
 	{
+		playerName = playerName.toLowerCase();
 		if(players.containsKey(playerName))
 		{
 			for (SimpleEntry<Long, String> timestamp : expirationTimes)
@@ -75,6 +78,7 @@ public class TimedList
 	public int getRememberedPosition(String playerName)
 	{
 		// Remove expired players first
+		playerName = playerName.toLowerCase();
 		cleanup();
 		return players.getOrDefault(playerName, Integer.MAX_VALUE);
 	}
