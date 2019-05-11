@@ -86,21 +86,7 @@ public final class QueuedPlayer {
             QueuePlugin.instance.debugWarn("Tried to check " + getHandle().getName() + "'s position but they were not in a queue.");
             return -1;
         }
-        for (int i = 0 ; i < queue.size() ; i++)
-        {
-            try
-            {
-                if (this.equals(queue.get(i)))
-                {
-                    return i;
-                }
-            }
-            catch (NullPointerException e)
-            {
-                return -1;
-            }
-        }
-        return -1;
+        return queue.indexOf(this);
     }
 
     /**
