@@ -32,6 +32,7 @@ public class PauseCommand extends QueuePluginCommand
                 if(queue.unpauseTime != Long.MAX_VALUE)
                 {
                     queue.unpauseTime = Long.MAX_VALUE;
+                    queue.failedAttempts = 0;
                 }
                 else
                 {
