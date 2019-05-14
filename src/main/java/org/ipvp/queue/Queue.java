@@ -205,20 +205,20 @@ public class Queue extends Vector<QueuedPlayer>
      * Searches for and returns a valid index to insert a player with a specified
      * priority weight.
      *
-     * @param weight Priority weight to search for
+     * @param playerWeight Priority weight to search for
      * @return Index to insert the priority at, returned index i will be {@code 0 <= i < {@link #size()}}
      */
-    private int getIndexByPriority(int weight)
+    private int getIndexByPriority(int playerWeight)
     {
-        if (isEmpty() || weight == -1)
+        if (isEmpty() || playerWeight == -1)
         {
             return 0;
         }
 
-        // Changed to not place priority players in the first 5 slots
+        // Changed to not place priority players in the first 3 slots
         for (int i = 3; i < size(); i++)
         {
-            if (weight > get(i).getPriority())
+            if (playerWeight > get(i).getPriority())
             {
                 return i;
             }
@@ -301,6 +301,7 @@ public class Queue extends Vector<QueuedPlayer>
                 {
                     plugin.getLogger().log(Level.INFO, next.getHandle().getName() + " was sent to " + target.getName() + " via Queue.");
                     next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "You have been sent to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + ""));
+                    savePlayerPosition(next.getHandle().getName(), 0);
                     failedAttempts = 0;
                     sendProgressMessages();
                 }
@@ -317,7 +318,9 @@ public class Queue extends Vector<QueuedPlayer>
 				savePlayerPosition(next.getHandle().getName(), 0);
 
                 // Gets the player object again to make sure there isn't some concurrent modification issue with bungeecord causing issues.
-                enqueue(plugin.getQueued(plugin.getProxy().getPlayer(next.getHandle().getName())));
+                QueuedPlayer newPlayer = plugin.getQueued(plugin.getProxy().getPlayer(next.getHandle().getName()));
+                newPlayer.setQueue(this);
+                add(0, newPlayer);
                 failedAttempts++;
                 QueuePlugin.instance.debugError("Failed count is now at " + failedAttempts);
                 lastSentTime = System.currentTimeMillis() + 1000;
