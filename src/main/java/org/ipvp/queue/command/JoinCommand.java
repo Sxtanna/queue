@@ -33,6 +33,12 @@ public class JoinCommand extends QueuePluginCommand
 			return;
 		}
 
+		if(!sender.hasPermission("queue.join." + args[0]) && !sender.hasPermission("queue.join.*"))
+		{
+			sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You don't have permission to use this command!"));
+			return;
+		}
+
 		ProxiedPlayer proxiedPlayer = (ProxiedPlayer)sender;
 		QueuedPlayer queuedPlayer = getPlugin().getQueued(proxiedPlayer);
 		String target = args[0].toLowerCase();
