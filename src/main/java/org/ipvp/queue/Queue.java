@@ -288,6 +288,12 @@ public class Queue extends Vector<QueuedPlayer>
 		}
 
         next.setQueue(null);
+
+        if (next.getHandle().getServer().getInfo().getName().equals(this.target.getName()))
+        {
+            return;
+        }
+
         next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Sending you to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "..."));
 
         plugin.getLogger().log(Level.INFO, "Preparing to send " + next.getHandle().getName() + " to " + target.getName() + " via Queue.");
