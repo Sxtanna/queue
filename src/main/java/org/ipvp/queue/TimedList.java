@@ -10,12 +10,14 @@ public class TimedList
 	private Vector<SimpleEntry<Long, String>> expirationTimes = new Vector<>();
 	private static long EXPIRATION_TIME = 900000;
 
+	/**
+	 * Removes all expired entries
+	 */
 	public void cleanup()
 	{
-
 		while(!expirationTimes.isEmpty())
 		{
-			if(expirationTimes.get(0).getKey() > System.currentTimeMillis())
+			if(expirationTimes.get(0).getKey() < System.currentTimeMillis())
 			{
 				players.remove(expirationTimes.get(0).getValue());
 				expirationTimes.remove(0);
@@ -35,9 +37,6 @@ public class TimedList
 	public void rememberPosition(String playerName, int position)
 	{
 		playerName = playerName.toLowerCase();
-
-		// Remove expired players first
-		cleanup();
 
 		// If the player is already registered find its old timestamp and delete it
 		forgetPlayer(playerName);

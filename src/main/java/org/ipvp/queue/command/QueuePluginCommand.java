@@ -5,7 +5,7 @@ import org.ipvp.queue.QueuePlugin;
 
 public abstract class QueuePluginCommand extends Command
 {
-    private QueuePlugin plugin;
+    protected QueuePlugin plugin;
 
     public QueuePluginCommand(QueuePlugin plugin, String name)
     {

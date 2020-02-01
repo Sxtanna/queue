@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -27,7 +28,7 @@ public class QueuePlugin extends Plugin implements Listener
     private Configuration config;
 
     private ConcurrentHashMap<ServerInfo, Integer> maxPlayers = new ConcurrentHashMap<>();
-    public Map<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    public TreeMap<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private ConcurrentHashMap<ProxiedPlayer, QueuedPlayer> queuedPlayers = new ConcurrentHashMap<>();
 
     public boolean debug = true;
@@ -51,6 +52,8 @@ public class QueuePlugin extends Plugin implements Listener
         getProxy().getServers().values().forEach(this::setupServer);
         getProxy().registerChannel("queue:join");
         getProxy().getPluginManager().registerListener(this, this);
+
+        // Checks if any queues are ready to send players
         getProxy().getScheduler().schedule(this, () ->
         {
             for (Queue queue : queues.values())
@@ -67,13 +70,30 @@ public class QueuePlugin extends Plugin implements Listener
             }
         }, 250, 250, TimeUnit.MILLISECONDS);
 
+        // Cleans up the list of all remembered players in all queues
+        getProxy().getScheduler().schedule(this, () ->
+        {
+            for (Queue queue : queues.values())
+            {
+                try
+                {
+                    queue.rememberedPlayerCleanup();
+                }
+                catch (Exception e)
+                {
+                    getLogger().severe("[QueueCleaner] Failed to clean up the list of remembered positions. Error: " + e);
+                }
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+
+        // Registers commands
         getProxy().getPluginManager().registerCommand(this, new LeaveCommand(this));
         getProxy().getPluginManager().registerCommand(this, new PauseCommand(this));
         getProxy().getPluginManager().registerCommand(this, new QueueCommand(this));
         getProxy().getPluginManager().registerCommand(this, new JoinCommand(this));
     }
 
-    private Configuration loadConfiguration() throws IOException
+    public Configuration loadConfiguration() throws IOException
     {
         File file = new File(getDataFolder(), "config.yml");
 
@@ -94,6 +114,21 @@ public class QueuePlugin extends Plugin implements Listener
         return config;
     }
 
+    public void refreshMaxPlayers()
+    {
+        for (Map.Entry<ServerInfo, Integer> entry : maxPlayers.entrySet())
+        {
+            entry.getKey().ping((p, err) ->
+            {
+                if (p == null || p.getPlayers() == null)
+                {
+                    return;
+                }
+                entry.setValue(p.getPlayers().getMax());
+            });
+        }
+    }
+
     // Gets the max players for a server and caches it for later use
     private void setupServer(ServerInfo info)
     {
@@ -104,8 +139,7 @@ public class QueuePlugin extends Plugin implements Listener
             {
                 return;
             }
-            int max = p.getPlayers().getMax();
-            maxPlayers.put(info, max);
+            maxPlayers.put(info, p.getPlayers().getMax());
             if (!queues.containsKey(name))
             {
                 queues.put(name, new Queue(this, info));
@@ -303,7 +337,7 @@ public class QueuePlugin extends Plugin implements Listener
             Queue queue = queued.getQueue();
             try
             {
-                queue.savePlayerPosition(player.getName(), queued.getPosition());
+                queue.rememberPosition(player.getName(), queued.getPosition());
                 queue.remove(queued);
             }
             catch (NullPointerException e)

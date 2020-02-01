@@ -89,7 +89,7 @@ public class Queue extends Vector<QueuedPlayer>
      * Saves players position in the queue when they leave so they can get it back if they rejoin.
      * @param playerName The player to save.
      */
-    public void savePlayerPosition(String playerName, int index)
+    public void rememberPosition(String playerName, int index)
     {
         rememberedPlayers.rememberPosition(playerName, index);
     }
@@ -103,6 +103,12 @@ public class Queue extends Vector<QueuedPlayer>
     {
         return rememberedPlayers.forgetPlayer(playerName);
     }
+
+    public void rememberedPlayerCleanup()
+    {
+        rememberedPlayers.cleanup();
+    }
+
 
     /**
      * Places a player in the queue, removes them from their old queue if they are already in one.
@@ -119,7 +125,6 @@ public class Queue extends Vector<QueuedPlayer>
             }
             else
             {
-                player.getQueue().savePlayerPosition(player.toString().toLowerCase(), player.getPosition());
                 player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.YELLOW + "You were removed from the " + player.getQueue().getTarget().getName() + " queue."));
                 player.getQueue().remove(player);
             }
@@ -166,7 +171,6 @@ public class Queue extends Vector<QueuedPlayer>
         else if (player.hasPermission("queue.priority.donator3"))
         {
             player.sendMessage(TextComponent.fromLegacyText(BLUE + "Blue" + GREEN + " donator access activated."));
-
         }
         else if (player.hasPermission("queue.priority.donator2"))
         {
@@ -237,7 +241,7 @@ public class Queue extends Vector<QueuedPlayer>
         {
             try
             {
-                savePlayerPosition(player.getHandle().getName(), player.getPosition());
+                rememberPosition(player.getHandle().getName(), player.getPosition());
                 player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d " + YELLOW + "for " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "",
                         player.getPosition() + 1, player.getQueue().size(), player.getQueue().getTarget().getName())));
                 if (player.getQueue().isPaused())
@@ -295,6 +299,7 @@ public class Queue extends Vector<QueuedPlayer>
         }
 
         next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Sending you to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "..."));
+        this.rememberPosition(next.getHandle().getName(), 0);
 
         plugin.getLogger().log(Level.INFO, "Preparing to send " + next.getHandle().getName() + " to " + target.getName() + " via Queue.");
 
@@ -307,7 +312,6 @@ public class Queue extends Vector<QueuedPlayer>
                 {
                     plugin.getLogger().log(Level.INFO, next.getHandle().getName() + " was sent to " + target.getName() + " via Queue.");
                     next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "You have been sent to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + ""));
-                    savePlayerPosition(next.getHandle().getName(), 0);
                     failedAttempts = 0;
                     sendProgressMessages();
                 }
@@ -321,7 +325,6 @@ public class Queue extends Vector<QueuedPlayer>
                 QueuePlugin.instance.debugError("[SendNext] Failed to send player " + next.getHandle().getName() + " to server " + target.getName() + ". Error: " + error);
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Unable to connect to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "."));
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Attempting to requeue you..."));
-				savePlayerPosition(next.getHandle().getName(), 0);
 
                 // Gets the player object again to make sure there isn't some concurrent modification issue with bungeecord causing issues.
                 QueuedPlayer newPlayer = plugin.getQueued(plugin.getProxy().getPlayer(next.getHandle().getName()));
