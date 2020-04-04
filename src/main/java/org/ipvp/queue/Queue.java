@@ -168,6 +168,10 @@ public class Queue extends Vector<QueuedPlayer>
         {
             player.sendMessage(TextComponent.fromLegacyText(DARK_GREEN + "Staff" + GREEN + " access activated."));
         }
+        else if (player.hasPermission("queue.priority.premium"))
+        {
+            player.sendMessage(TextComponent.fromLegacyText(LIGHT_PURPLE + "Premium" + GREEN + " access activated."));
+        }
         else if (player.hasPermission("queue.priority.donator3"))
         {
             player.sendMessage(TextComponent.fromLegacyText(BLUE + "Blue" + GREEN + " donator access activated."));
