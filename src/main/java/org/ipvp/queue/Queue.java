@@ -146,6 +146,7 @@ public class Queue extends Vector<QueuedPlayer>
         catch(NullPointerException | IndexOutOfBoundsException e)
         {
             // Player is added at the end if an error occured when trying to find their position
+            e.printStackTrace();
             player.setQueue(this);
             add(player);
         }
@@ -225,7 +226,7 @@ public class Queue extends Vector<QueuedPlayer>
         }
 
         // Changed to not place priority players in the first 3 slots
-        int slot = size();
+        int slot = 3;
         for (int i = 3; i < size(); i++)
         {
             if (playerWeight <= get(i).getPriority())
@@ -234,7 +235,7 @@ public class Queue extends Vector<QueuedPlayer>
             }
         }
 
-        return slot;
+        return Math.min(slot, size());
     }
 
     private void sendProgressMessages()
