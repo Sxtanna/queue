@@ -149,6 +149,7 @@ public class Queue extends Vector<QueuedPlayer>
             player.setQueue(this);
             add(player);
         }
+
         player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "You have joined the queue for " + QueuePlugin.capitalizeFirstLetter(target.getName())));
         player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d", player.getPosition() + 1, size())));
         SendPriorityMessage(player.getHandle());
@@ -224,14 +225,16 @@ public class Queue extends Vector<QueuedPlayer>
         }
 
         // Changed to not place priority players in the first 3 slots
+        int slot = size();
         for (int i = 3; i < size(); i++)
         {
-            if (playerWeight > get(i).getPriority())
+            if (playerWeight <= get(i).getPriority())
             {
-                return i;
+                slot = i+1;
             }
         }
-        return size();
+
+        return slot;
     }
 
     private void sendProgressMessages()
@@ -285,18 +288,18 @@ public class Queue extends Vector<QueuedPlayer>
 
         lastSentTime = System.currentTimeMillis();
         QueuedPlayer next = remove(0);
+
         if(next == null)
         {
             return;
         }
 
         if(next.getHandle() == null)
-		{
-			return;
-		}
+        {
+            return;
+        }
 
         next.setQueue(null);
-
         if (next.getHandle().getServer().getInfo().getName().equals(this.target.getName()))
         {
             return;
@@ -304,7 +307,6 @@ public class Queue extends Vector<QueuedPlayer>
 
         next.getHandle().sendMessage(TextComponent.fromLegacyText(GREEN + "Sending you to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "..."));
         this.rememberPosition(next.getHandle().getName(), 0);
-
         plugin.getLogger().log(Level.INFO, "Preparing to send " + next.getHandle().getName() + " to " + target.getName() + " via Queue.");
 
         next.getHandle().connect(target, (result, error) ->
@@ -329,7 +331,6 @@ public class Queue extends Vector<QueuedPlayer>
                 QueuePlugin.instance.debugError("[SendNext] Failed to send player " + next.getHandle().getName() + " to server " + target.getName() + ". Error: " + error);
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Unable to connect to " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "."));
                 next.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Attempting to requeue you..."));
-
                 // Gets the player object again to make sure there isn't some concurrent modification issue with bungeecord causing issues.
                 QueuedPlayer newPlayer = plugin.getQueued(plugin.getProxy().getPlayer(next.getHandle().getName()));
                 newPlayer.setQueue(this);
