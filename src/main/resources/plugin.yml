@@ -1,5 +1,5 @@
-name: Queue
-main: org.ipvp.queue.QueuePlugin
-version: ${project.version}
-description: ${project.description}
-author: SainttX, KarlofDuty
+name: "Queue"
+main: "org.ipvp.queue.QueuePlugin"
+version: "@version@"
+description: "@description@"
+author: "SainttX, KarlofDuty"
