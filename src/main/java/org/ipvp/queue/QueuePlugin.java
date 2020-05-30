@@ -6,18 +6,26 @@ import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.event.*;
+import net.md_5.bungee.api.event.PlayerDisconnectEvent;
+import net.md_5.bungee.api.event.PluginMessageEvent;
+import net.md_5.bungee.api.event.ServerSwitchEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.md_5.bungee.event.EventHandler;
-import org.ipvp.queue.command.*;
+import org.ipvp.queue.command.JoinCommand;
+import org.ipvp.queue.command.LeaveCommand;
+import org.ipvp.queue.command.PauseCommand;
+import org.ipvp.queue.command.QueueCommand;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -115,16 +123,17 @@ public class QueuePlugin extends Plugin implements Listener
 
     public void refreshMaxPlayers()
     {
-        for (Map.Entry<ServerInfo, Integer> entry : maxPlayers.entrySet())
+        for (final Map.Entry<String, ServerInfo> entry : getProxy().getServers().entrySet())
         {
-            entry.getKey().ping((p, err) ->
-            {
-                if (p == null || p.getPlayers() == null)
-                {
-                    return;
-                }
-                entry.setValue(p.getPlayers().getMax());
-            });
+            entry.getValue().ping((p, err) ->
+                                  {
+                                      if (p == null || p.getPlayers() == null)
+                                      {
+                                          return;
+                                      }
+
+                                      maxPlayers.put(entry.getValue(), p.getPlayers().getMax());
+                                  });
         }
     }
 
