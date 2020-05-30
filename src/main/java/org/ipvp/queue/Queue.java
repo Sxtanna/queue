@@ -4,6 +4,9 @@ import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import org.ipvp.queue.list.QueueList;
+import org.ipvp.queue.list.RedisList;
+import org.ipvp.queue.list.TimedList;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -25,7 +28,8 @@ public class Queue extends Vector<QueuedPlayer>
     public int failedAttempts = 0;
     public long unpauseTime = Long.MAX_VALUE;
 
-    private TimedList rememberedPlayers = new TimedList();
+    private final QueueList rememberedPlayers;
+
 
     public Queue(QueuePlugin plugin, ServerInfo target)
     {
@@ -33,6 +37,15 @@ public class Queue extends Vector<QueuedPlayer>
         Objects.requireNonNull(target);
         this.plugin = plugin;
         this.target = target;
+
+        if (!plugin.isUsingRedis())
+        {
+            rememberedPlayers = new TimedList();
+        }
+        else
+        {
+            rememberedPlayers = new RedisList();
+        }
     }
 
     /**
