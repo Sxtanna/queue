@@ -151,9 +151,15 @@ public class QueuePlugin extends Plugin implements Listener
         }
     }
 
+
+    public boolean isUsingRedis()
+    {
+        return hook != null && hook.usable();
+    }
+
     public int getPlayerCount(final ServerInfo server)
     {
-        if (hook != null && hook.usable())
+        if (isUsingRedis())
         {
             int count = hook.getPlayerCount(server);
 
