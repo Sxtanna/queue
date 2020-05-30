@@ -2,6 +2,6 @@ name: "Queue"
 main: "org.ipvp.queue.QueuePlugin"
 version: "@version@"
 description: "@description@"
-author: "SainttX, KarlofDuty"
+author: "SainttX, KarlofDuty, Sxtanna"
 
 softDepends: ["RedisBungee"]
