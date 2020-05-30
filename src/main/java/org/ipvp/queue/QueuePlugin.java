@@ -19,6 +19,7 @@ import org.ipvp.queue.command.JoinCommand;
 import org.ipvp.queue.command.LeaveCommand;
 import org.ipvp.queue.command.PauseCommand;
 import org.ipvp.queue.command.QueueCommand;
+import org.ipvp.queue.hook.RedisBungeeHook;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +35,7 @@ public class QueuePlugin extends Plugin implements Listener
 {
     private Configuration config;
 
+    private RedisBungeeHook hook;
     private ConcurrentHashMap<ServerInfo, Integer> maxPlayers = new ConcurrentHashMap<>();
     public TreeMap<String, Queue> queues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private ConcurrentHashMap<ProxiedPlayer, QueuedPlayer> queuedPlayers = new ConcurrentHashMap<>();
@@ -98,6 +100,18 @@ public class QueuePlugin extends Plugin implements Listener
         getProxy().getPluginManager().registerCommand(this, new PauseCommand(this));
         getProxy().getPluginManager().registerCommand(this, new QueueCommand(this));
         getProxy().getPluginManager().registerCommand(this, new JoinCommand(this));
+
+        if (getProxy().getPluginManager().getPlugin("RedisBungee") != null)
+        {
+            try
+            {
+                hook = new RedisBungeeHook();
+            }
+            catch (final Throwable ex)
+            {
+                getLogger().log(Level.SEVERE, "failed to register redisbungee hook", ex);
+            }
+        }
     }
 
     public Configuration loadConfiguration() throws IOException
@@ -135,6 +149,21 @@ public class QueuePlugin extends Plugin implements Listener
                                       maxPlayers.put(entry.getValue(), p.getPlayers().getMax());
                                   });
         }
+    }
+
+    public int getPlayerCount(final ServerInfo server)
+    {
+        if (hook != null && hook.usable())
+        {
+            int count = hook.getPlayerCount(server);
+
+            if (count != -1)
+            {
+                return count;
+            }
+        }
+
+        return server.getPlayers().size();
     }
 
     // Gets the max players for a server and caches it for later use

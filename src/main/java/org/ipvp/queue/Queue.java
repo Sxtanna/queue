@@ -1,5 +1,6 @@
 package org.ipvp.queue;
 
+import com.imaginarycode.minecraft.redisbungee.RedisBungee;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
@@ -80,9 +81,9 @@ public class Queue extends Vector<QueuedPlayer>
             unpauseTime = Long.MAX_VALUE;
         }
         return !isPaused() &&
-                !isEmpty() &&
-                target.getPlayers().size() < plugin.getMaxPlayers(target) &&
-                lastSentTime + TIME_BETWEEN_SENDING_MILLIS < System.currentTimeMillis();
+               !isEmpty() &&
+               plugin.getPlayerCount(target) < plugin.getMaxPlayers(target) &&
+               lastSentTime + TIME_BETWEEN_SENDING_MILLIS < System.currentTimeMillis();
     }
 
     /**
@@ -246,22 +247,22 @@ public class Queue extends Vector<QueuedPlayer>
         }
 
         this.forEach(player ->
-        {
-            try
-            {
-                rememberPosition(player.getHandle().getName(), player.getPosition());
-                player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d " + YELLOW + "for " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "",
-                        player.getPosition() + 1, player.getQueue().size(), player.getQueue().getTarget().getName())));
-                if (player.getQueue().isPaused())
-                {
-                    player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
-                }
-            }
-            catch (Exception e)
-            {
-                QueuePlugin.instance.debugError("Error sending update message to player: " + player.getHandle().getName() + " in the queue to " + target.getName());
-            }
-        });
+                     {
+                         try
+                         {
+                             rememberPosition(player.getHandle().getName(), player.getPosition());
+                             player.getHandle().sendMessage(TextComponent.fromLegacyText(String.format(YELLOW + "You are currently in position " + GREEN + "%d " + YELLOW + "of " + GREEN + "%d " + YELLOW + "for " + QueuePlugin.capitalizeFirstLetter(getTarget().getName()) + "",
+                                                                                                       player.getPosition() + 1, player.getQueue().size(), player.getQueue().getTarget().getName())));
+                             if (player.getQueue().isPaused())
+                             {
+                                 player.getHandle().sendMessage(TextComponent.fromLegacyText(ChatColor.GRAY + "The queue you are currently in is paused"));
+                             }
+                         }
+                         catch (Exception e)
+                         {
+                             QueuePlugin.instance.debugError("Error sending update message to player: " + player.getHandle().getName() + " in the queue to " + target.getName());
+                         }
+                     });
         lastPositionMessageSent = System.currentTimeMillis();
     }
 
