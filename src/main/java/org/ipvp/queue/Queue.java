@@ -1,6 +1,5 @@
 package org.ipvp.queue;
 
-import com.imaginarycode.minecraft.redisbungee.RedisBungee;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
