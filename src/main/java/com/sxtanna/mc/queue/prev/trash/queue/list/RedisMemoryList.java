@@ -1,10 +1,10 @@
-package org.ipvp.queue.list;
+package com.sxtanna.mc.queue.prev.trash.queue.list;
 
 import com.google.common.primitives.Ints;
 import com.imaginarycode.minecraft.redisbungee.RedisBungee;
 import com.imaginarycode.minecraft.redisbungee.internal.jedis.Jedis;
 
-public final class RedisList extends QueueList
+public final class RedisMemoryList extends QueueMemoryList
 {
 
 	@Override

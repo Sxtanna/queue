@@ -1,4 +1,4 @@
-package org.ipvp.queue.hook;
+package com.sxtanna.mc.queue.hook;
 
 import net.md_5.bungee.api.config.ServerInfo;
 
@@ -11,6 +11,7 @@ public final class RedisBungeeHook
 	{
 		this.api = com.imaginarycode.minecraft.redisbungee.RedisBungee.getApi();
 	}
+
 
 	public boolean usable()
 	{

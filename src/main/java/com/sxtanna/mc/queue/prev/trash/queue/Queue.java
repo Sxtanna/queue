@@ -1,12 +1,12 @@
-package org.ipvp.queue;
+package com.sxtanna.mc.queue.prev.trash.queue;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import org.ipvp.queue.list.QueueList;
-import org.ipvp.queue.list.RedisList;
-import org.ipvp.queue.list.TimedList;
+import com.sxtanna.mc.queue.prev.trash.queue.list.QueueMemoryList;
+import com.sxtanna.mc.queue.prev.trash.queue.list.RedisMemoryList;
+import com.sxtanna.mc.queue.prev.trash.queue.list.TimedMemoryList;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -28,7 +28,7 @@ public class Queue extends Vector<QueuedPlayer>
     public int failedAttempts = 0;
     public long unpauseTime = Long.MAX_VALUE;
 
-    private final QueueList rememberedPlayers;
+    private final QueueMemoryList rememberedPlayers;
 
 
     public Queue(QueuePlugin plugin, ServerInfo target)
@@ -40,11 +40,11 @@ public class Queue extends Vector<QueuedPlayer>
 
         if (!plugin.isUsingRedis())
         {
-            rememberedPlayers = new TimedList();
+            rememberedPlayers = new TimedMemoryList();
         }
         else
         {
-            rememberedPlayers = new RedisList();
+            rememberedPlayers = new RedisMemoryList();
         }
     }
 
@@ -293,6 +293,8 @@ public class Queue extends Vector<QueuedPlayer>
             paused = true;
             unpauseTime = System.currentTimeMillis() + 20000;
             QueuePlugin.instance.debugError("Queue is paused for 30 seconds due to repeated failed attempts to send players.");
+
+
             for (QueuedPlayer player : this)
             {
                 player.getHandle().sendMessage(TextComponent.fromLegacyText(RED + "Queue is paused for 30 seconds as the target server refused the last 5 players."));

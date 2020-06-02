@@ -1,7 +1,9 @@
 name: "Queue"
-main: "org.ipvp.queue.QueuePlugin"
+main: "com.sxtanna.mc.queue.QueuePlugin"
+
 version: "@version@"
 description: "@description@"
-author: "SainttX, KarlofDuty, Sxtanna"
+
+author: "Sxtanna"
 
 softDepends: ["RedisBungee"]

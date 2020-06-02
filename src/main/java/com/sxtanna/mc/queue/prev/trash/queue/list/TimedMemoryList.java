@@ -1,10 +1,10 @@
-package org.ipvp.queue.list;
+package com.sxtanna.mc.queue.prev.trash.queue.list;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TimedList extends QueueList
+public class TimedMemoryList extends QueueMemoryList
 {
 
 	private final ConcurrentHashMap<String, Integer> players         = new ConcurrentHashMap<>();
@@ -36,7 +36,7 @@ public class TimedList extends QueueList
 		// If the player is already registered find its old timestamp and delete it
 		forgetPlayer(playerName);
 
-		expirationTimes.add(new SimpleEntry<>(System.currentTimeMillis() + QueueList.EXPIRATION_TIME, playerName));
+		expirationTimes.add(new SimpleEntry<>(System.currentTimeMillis() + QueueMemoryList.EXPIRATION_TIME, playerName));
 		players.put(playerName, position);
 	}
 

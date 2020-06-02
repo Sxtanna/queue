@@ -1,4 +1,4 @@
-package org.ipvp.queue;
+package com.sxtanna.mc.queue.prev.trash.queue;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
@@ -15,11 +15,11 @@ import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.md_5.bungee.event.EventHandler;
-import org.ipvp.queue.command.JoinCommand;
-import org.ipvp.queue.command.LeaveCommand;
-import org.ipvp.queue.command.PauseCommand;
-import org.ipvp.queue.command.QueueCommand;
-import org.ipvp.queue.hook.RedisBungeeHook;
+import com.sxtanna.mc.queue.prev.trash.queue.command.JoinCommand;
+import com.sxtanna.mc.queue.prev.trash.queue.command.LeaveCommand;
+import com.sxtanna.mc.queue.prev.trash.queue.command.PauseCommand;
+import com.sxtanna.mc.queue.prev.trash.queue.command.QueueCommand;
+import com.sxtanna.mc.queue.prev.trash.queue.hook.RedisBungeeHook;
 
 import java.io.File;
 import java.io.IOException;

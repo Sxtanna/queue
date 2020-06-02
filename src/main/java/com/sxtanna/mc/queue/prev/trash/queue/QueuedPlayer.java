@@ -1,13 +1,10 @@
-package org.ipvp.queue;
+package com.sxtanna.mc.queue.prev.trash.queue;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.Objects;
-
-import static net.md_5.bungee.api.ChatColor.GREEN;
-import static net.md_5.bungee.api.ChatColor.YELLOW;
 
 public final class QueuedPlayer {
 

@@ -1,7 +1,7 @@
-package org.ipvp.queue.command;
+package com.sxtanna.mc.queue.prev.trash.queue.command;
 
 import net.md_5.bungee.api.plugin.Command;
-import org.ipvp.queue.QueuePlugin;
+import com.sxtanna.mc.queue.prev.trash.queue.QueuePlugin;
 
 public abstract class QueuePluginCommand extends Command
 {

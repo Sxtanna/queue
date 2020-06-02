@@ -1,6 +1,6 @@
-package org.ipvp.queue.list;
+package com.sxtanna.mc.queue.prev.trash.queue.list;
 
-public abstract class QueueList
+public abstract class QueueMemoryList
 {
 
 	public static final long EXPIRATION_TIME = 900000;

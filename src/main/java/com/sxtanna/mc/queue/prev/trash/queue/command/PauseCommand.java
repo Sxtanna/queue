@@ -1,10 +1,10 @@
-package org.ipvp.queue.command;
+package com.sxtanna.mc.queue.prev.trash.queue.command;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.ipvp.queue.Queue;
-import org.ipvp.queue.QueuePlugin;
+import com.sxtanna.mc.queue.prev.trash.queue.Queue;
+import com.sxtanna.mc.queue.prev.trash.queue.QueuePlugin;
 
 public class PauseCommand extends QueuePluginCommand
 {

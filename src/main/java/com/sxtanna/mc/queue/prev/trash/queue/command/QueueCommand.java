@@ -1,11 +1,11 @@
-package org.ipvp.queue.command;
+package com.sxtanna.mc.queue.prev.trash.queue.command;
 
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import org.ipvp.queue.Queue;
-import org.ipvp.queue.QueuePlugin;
-import org.ipvp.queue.QueuedPlayer;
+import com.sxtanna.mc.queue.prev.trash.queue.Queue;
+import com.sxtanna.mc.queue.prev.trash.queue.QueuePlugin;
+import com.sxtanna.mc.queue.prev.trash.queue.QueuedPlayer;
 
 import java.io.IOException;
 
