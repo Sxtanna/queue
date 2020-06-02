@@ -5,9 +5,10 @@ plugins {
 }
 
 
-group = 'org.ipvp'
-version = '2.7.7-1.15'
-description = "Bungeecord server queue connector"
+group = 'com.sxtanna.mc'
+version = '1.0'
+
+description = "Bungeecord server queue with redis hook"
 
 
 sourceCompatibility = JavaVersion.VERSION_1_8
